@@ -1,5 +1,3 @@
-from enum import Enum, auto
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -15,42 +13,6 @@ class Model:
     DELTA_T = 1 / NB_OF_STEPS
 
     __moh_data = None
-
-    class Parameter:
-        """
-        A model parameter, i.e. either a VOI or a state variable.
-        """
-
-        class Kind(Enum):
-            VOI = auto()
-            STATE = auto()
-
-        def __init__(self, kind, name, initial_value):
-            # Initialise our model parameter.
-
-            self.__kind = kind
-            self.__name = name
-            self.__values = np.array([initial_value])
-
-        def kind(self):
-            # Return our kind.
-
-            return self.__kind
-
-        def name(self):
-            # Return our name.
-
-            return self.__name
-
-        def values(self):
-            # Return our values.
-
-            return self.__values
-
-        def __append_value(self, value):
-            # Append the given value to our internal values.
-
-            self.__values = np.append(self.__values, value)
 
     def __init__(self):
         # Retrieve the MoH data.
@@ -88,21 +50,12 @@ class Model:
         self.__gamma = 0.035
         self.__mu = 0.005
 
-        # Keep track of various model parameters.
+        # Reset our simulation values.
 
-        self.__voi_parameter = self.Parameter(self.Parameter.Kind.VOI, 'time', 0)
-        self.__s_parameter = self.Parameter(self.Parameter.Kind.STATE, 'S', self.__s)
-        self.__i_parameter = self.Parameter(self.Parameter.Kind.STATE, 'I', self.__i)
-        self.__r_parameter = self.Parameter(self.Parameter.Kind.STATE, 'R', self.__r)
-        self.__d_parameter = self.Parameter(self.Parameter.Kind.STATE, 'D', self.__d)
-
-        self.parameters = {
-            self.__voi_parameter.name(): self.__voi_parameter,
-            self.__s_parameter.name(): self.__s_parameter,
-            self.__i_parameter.name(): self.__i_parameter,
-            self.__r_parameter.name(): self.__r_parameter,
-            self.__d_parameter.name(): self.__d_parameter,
-        }
+        self.__s_values = np.array([self.__s])
+        self.__i_values = np.array([self.__i])
+        self.__r_values = np.array([self.__r])
+        self.__d_values = np.array([self.__d])
 
     def run(self, sim_duration=100):
         # Make sure that we were given a valid simulation duration.
@@ -135,11 +88,10 @@ class Model:
 
             # Update our simulation results.
 
-            self.__voi_parameter._Parameter__append_value(i + 1)
-            self.__s_parameter._Parameter__append_value(self.__s)
-            self.__i_parameter._Parameter__append_value(self.__i)
-            self.__r_parameter._Parameter__append_value(self.__r)
-            self.__d_parameter._Parameter__append_value(self.__d)
+            self.__s_values = np.append(self.__s_values, self.__s)
+            self.__i_values = np.append(self.__i_values, self.__i)
+            self.__r_values = np.append(self.__r_values, self.__r)
+            self.__d_values = np.append(self.__d_values, self.__d)
 
     def plot(self):
         # Plot the results.
@@ -147,14 +99,40 @@ class Model:
         plt.clf()  # In case there is already a Matplotlib window.
         plt.gcf().canvas.set_window_title('SIRD model')
 
-        plt.plot(self.__voi_parameter.values(), self.__s_parameter.values(), '#0071bd', label=self.__s_parameter.name())
-        plt.plot(self.__voi_parameter.values(), self.__i_parameter.values(), '#d9521a', label=self.__i_parameter.name())
-        plt.plot(self.__voi_parameter.values(), self.__r_parameter.values(), '#edb020', label=self.__r_parameter.name())
-        plt.plot(self.__voi_parameter.values(), self.__d_parameter.values(), '#7e2f8e', label=self.__d_parameter.name())
+        days = range(self.__s_values.size)
+
+        plt.plot(days, self.__s_values, '#0071bd', label='S')
+        plt.plot(days, self.__i_values, '#d9521a', label='I')
+        plt.plot(days, self.__r_values, '#edb020', label='R')
+        plt.plot(days, self.__d_values, '#7e2f8e', label='D')
         plt.legend(loc='best')
         plt.xlabel('time (day)')
 
         plt.show()
+
+    def s(self, day=-1):
+        if day == -1:
+            return self.__s_values
+        else:
+            return self.__s_values[day]
+
+    def i(self, day=-1):
+        if day == -1:
+            return self.__i_values
+        else:
+            return self.__i_values[day]
+
+    def r(self, day=-1):
+        if day == -1:
+            return self.__r_values
+        else:
+            return self.__r_values[day]
+
+    def d(self, day=-1):
+        if day == -1:
+            return self.__d_values
+        else:
+            return self.__d_values[day]
 
 
 if __name__ == '__main__':
