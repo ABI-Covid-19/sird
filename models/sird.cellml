@@ -1,0 +1,128 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<model name="basic_seir" xmlns="http://www.cellml.org/cellml/1.1#" xmlns:cellml="http://www.cellml.org/cellml/1.1#">
+    <units name="day">
+        <unit multiplier="86400" units="second"/>
+    </units>
+    <units name="per_day">
+        <unit exponent="-1" multiplier="86400" units="second"/>
+    </units>
+    <component name="environment">
+        <variable name="time" public_interface="out" units="day"/>
+    </component>
+    <component name="main">
+        <!-- Time-->
+        <variable name="t" public_interface="in" units="day"/>
+        <!-- Population-->
+        <variable initial_value="1000" name="N" units="dimensionless"/>
+        <!-- Susceptible-->
+        <variable initial_value="997" name="S" units="dimensionless"/>
+        <!-- Infected-->
+        <variable initial_value="3" name="I" units="dimensionless"/>
+        <!-- Recovered-->
+        <variable initial_value="0" name="R" units="dimensionless"/>
+        <!-- Deceased-->
+        <variable initial_value="0" name="D" units="dimensionless"/>
+        <!-- S -> I transition rate-->
+        <variable initial_value="0.4" name="beta" units="per_day"/>
+        <!-- I -> R transition rate-->
+        <variable initial_value="0.035" name="gamma" units="per_day"/>
+        <!-- I -> D transition rate-->
+        <variable initial_value="0.005" name="mu" units="per_day"/>
+        <!-- System of ODEs-->
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>S</ci>
+                </apply>
+                <apply>
+                    <divide/>
+                    <apply>
+                        <times/>
+                        <apply>
+                            <minus/>
+                            <ci>beta</ci>
+                        </apply>
+                        <ci>I</ci>
+                        <ci>S</ci>
+                    </apply>
+                    <ci>N</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>I</ci>
+                </apply>
+                <apply>
+                    <minus/>
+                    <apply>
+                        <minus/>
+                        <apply>
+                            <divide/>
+                            <apply>
+                                <times/>
+                                <ci>beta</ci>
+                                <ci>I</ci>
+                                <ci>S</ci>
+                            </apply>
+                            <ci>N</ci>
+                        </apply>
+                        <apply>
+                            <times/>
+                            <ci>gamma</ci>
+                            <ci>I</ci>
+                        </apply>
+                    </apply>
+                    <apply>
+                        <times/>
+                        <ci>mu</ci>
+                        <ci>I</ci>
+                    </apply>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>R</ci>
+                </apply>
+                <apply>
+                    <times/>
+                    <ci>gamma</ci>
+                    <ci>I</ci>
+                </apply>
+            </apply>
+            <apply>
+                <eq/>
+                <apply>
+                    <diff/>
+                    <bvar>
+                        <ci>t</ci>
+                    </bvar>
+                    <ci>D</ci>
+                </apply>
+                <apply>
+                    <times/>
+                    <ci>mu</ci>
+                    <ci>I</ci>
+                </apply>
+            </apply>
+        </math>
+    </component>
+    <connection>
+        <map_components component_1="main" component_2="environment"/>
+        <map_variables variable_1="t" variable_2="time"/>
+    </connection>
+</model>
