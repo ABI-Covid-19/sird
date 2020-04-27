@@ -52,13 +52,17 @@ class Model:
 
             self.__values = np.append(self.__values, value)
 
-    def __init__(self):
-        # Retrieve the MoH data.
+    def __init__(self, use_moh_data=True):
+        # Retrieve some MoH data, if needed.
 
-        if Model.__moh_data == None:
+        if use_moh_data and Model.__moh_data == None:
             Model.__moh_data = pd.read_csv(
                 'https://docs.google.com/spreadsheets/u/1/d/16UMnHbnBHju-fK45aSdaJhVmrXJpy71oxSiN_AvqV84/export?format=csv&id=16UMnHbnBHju-fK45aSdaJhVmrXJpy71oxSiN_AvqV84&gid=0',
                 usecols=[7, 9, 11])
+
+        # Keep track of whether to use the MoH data.
+
+        self.__use_moh_data = use_moh_data
 
         # Initialise (i.e. reset) our SIRD model.
 
@@ -79,11 +83,19 @@ class Model:
     def reset(self):
         # Reset our SIRD model.
 
-        self.__s = 997
-        self.__i = 3
-        self.__r = 0
-        self.__d = 0
-        self.__n = 1000
+        if self.__use_moh_data:
+            self.__s = self.__moh_s(0)
+            self.__i = self.__moh_i(0)
+            self.__r = self.__moh_r(0)
+            self.__d = self.__moh_d(0)
+            self.__n = Model.NZ_POPULATION
+        else:
+            self.__s = 997
+            self.__i = 3
+            self.__r = 0
+            self.__d = 0
+            self.__n = 1000
+
         self.__beta = 0.4
         self.__gamma = 0.035
         self.__mu = 0.005
@@ -116,13 +128,14 @@ class Model:
         # Run our SIRD simulation.
 
         for i in range(sim_duration):
-            # Output the MoH data for the given day.
+            # Output the MoH data for the given day, if needed.
 
-            try:
-                print('Day ', i, ': S=', self.__moh_s(i), ' I=', self.__moh_i(i), ' R=', self.__moh_r(i), ' D=',
-                      self.__moh_d(i), sep='')
-            except:
-                pass
+            if self.__use_moh_data:
+                try:
+                    print('Day ', i, ': S=', self.__moh_s(i), ' I=', self.__moh_i(i), ' R=', self.__moh_r(i), ' D=',
+                          self.__moh_d(i), sep='')
+                except:
+                    pass
 
             # Compute the SIRD model for one day.
 
