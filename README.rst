@@ -37,13 +37,17 @@ Use
  m.run(150)
  m.plot()
 
- # Output the kind, name and values of the model's time parameter.
- t = m.parameters['time']
- print(' [', t.kind(), '] ', t.name(), ': ', t.values(), sep='')
+ # Output all the values for S, I, R and D.
+ print(m.s())
+ print(m.i())
+ print(m.r())
+ print(m.d())
 
- # Output the kind, name and values of all the model's parameters.
- for p in m.parameters.values():
-     print(' [', p.kind(), '] ', p.name(), ': ', p.values(), sep='')
+ # Output the value for S, I, R and D at day 29.
+ print(m.s(29))
+ print(m.i(29))
+ print(m.r(29))
+ print(m.d(29))
 
 For the first run, you should get something like:
 
