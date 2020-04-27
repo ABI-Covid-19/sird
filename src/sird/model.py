@@ -14,6 +14,8 @@ class Model:
     NB_OF_STEPS = 100
     DELTA_T = 1 / NB_OF_STEPS
 
+    __moh_data = None
+
     class Parameter:
         """
         A model parameter, i.e. either a VOI or a state variable.
@@ -51,9 +53,28 @@ class Model:
             self.__values = np.append(self.__values, value)
 
     def __init__(self):
+        # Retrieve the MoH data.
+
+        if Model.__moh_data == None:
+            Model.__moh_data = pd.read_csv(
+                'https://docs.google.com/spreadsheets/u/1/d/16UMnHbnBHju-fK45aSdaJhVmrXJpy71oxSiN_AvqV84/export?format=csv&id=16UMnHbnBHju-fK45aSdaJhVmrXJpy71oxSiN_AvqV84&gid=0',
+                usecols=[7, 9, 11])
+
         # Initialise (i.e. reset) our SIRD model.
 
         self.reset()
+
+    def __moh_s(self, day):
+        return Model.NZ_POPULATION - self.__moh_i(day) - self.__moh_r(day) - self.__moh_d(day)
+
+    def __moh_i(self, day):
+        return Model.__moh_data.iloc[day][2]
+
+    def __moh_r(self, day):
+        return Model.__moh_data.iloc[day][0]
+
+    def __moh_d(self, day):
+        return Model.__moh_data.iloc[day][1]
 
     def reset(self):
         # Reset our SIRD model.
@@ -95,6 +116,14 @@ class Model:
         # Run our SIRD simulation.
 
         for i in range(sim_duration):
+            # Output the MoH data for the given day.
+
+            try:
+                print('Day ', i, ': S=', self.__moh_s(i), ' I=', self.__moh_i(i), ' R=', self.__moh_r(i), ' D=',
+                      self.__moh_d(i), sep='')
+            except:
+                pass
+
             # Compute the SIRD model for one day.
 
             for j in range(Model.NB_OF_STEPS):
