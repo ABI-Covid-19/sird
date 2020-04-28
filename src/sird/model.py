@@ -17,7 +17,7 @@ class Model:
     I_COLOR = '#d9521a'
     R_COLOR = '#edb020'
     D_COLOR = '#7e2f8e'
-    MOH_STYLE = 'dashed'
+    MOH_ALPHA = 0.3
 
     __moh_data = None
 
@@ -131,15 +131,17 @@ class Model:
         ax1 = ax[0]
         ax2 = ax1.twinx()
 
-        ax1.plot(days, self.__moh_s_values, Model.S_COLOR, linestyle=Model.MOH_STYLE, label='MoH S')
+        ax1.bar(days, self.__moh_s_values - min(self.__moh_s_values), color=Model.S_COLOR, alpha=Model.MOH_ALPHA,
+                label='MoH S')
+        ax1.set_yticklabels(np.arange(min(self.__moh_s_values), Model.NZ_POPULATION + 1))
         ax2.plot(days, self.__s_values, Model.S_COLOR, label='S')
         plt.legend(loc='best')
 
         ax1 = ax[1]
         ax2 = ax1.twinx()
 
-        ax1.plot(days, self.__moh_i_values, Model.I_COLOR, linestyle=Model.MOH_STYLE, label='MoH I')
-        ax1.plot(days, self.__moh_r_values, Model.R_COLOR, linestyle=Model.MOH_STYLE, label='MoH R')
+        ax1.bar(days, self.__moh_i_values, color=Model.I_COLOR, alpha=Model.MOH_ALPHA, label='MoH I')
+        ax1.bar(days, self.__moh_r_values, color=Model.R_COLOR, alpha=Model.MOH_ALPHA, label='MoH R')
         ax2.plot(days, self.__i_values, Model.I_COLOR, label='I')
         ax2.plot(days, self.__r_values, Model.R_COLOR, label='R')
         plt.legend(loc='best')
@@ -147,7 +149,7 @@ class Model:
         ax1 = ax[2]
         ax2 = ax1.twinx()
 
-        ax1.plot(days, self.__moh_d_values, Model.D_COLOR, linestyle=Model.MOH_STYLE, label='MoH D')
+        ax1.bar(days, self.__moh_d_values, color=Model.D_COLOR, alpha=Model.MOH_ALPHA, label='MoH D')
         ax2.plot(days, self.__d_values, Model.D_COLOR, label='D')
         plt.legend(loc='best')
 
