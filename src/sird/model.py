@@ -93,15 +93,6 @@ class Model:
         # Run our SIRD simulation.
 
         for i in range(sim_duration):
-            # Output the MoH data for the given day, if needed.
-
-            if self.__use_moh_data:
-                try:
-                    print('Day ', i, ': S=', self.__moh_s(i), ' I=', self.__moh_i(i), ' R=', self.__moh_r(i), ' D=',
-                          self.__moh_d(i), sep='')
-                except:
-                    pass
-
             # Compute the SIRD model for one day.
 
             for j in range(Model.NB_OF_STEPS):
