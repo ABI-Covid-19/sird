@@ -71,10 +71,11 @@ class Model:
 
         # Reset our MoH data and simulation values.
 
-        self.__moh_s_values = np.array([self.__moh_s(0)])
-        self.__moh_i_values = np.array([self.__moh_i(0)])
-        self.__moh_r_values = np.array([self.__moh_r(0)])
-        self.__moh_d_values = np.array([self.__moh_d(0)])
+        if self.__use_moh_data:
+            self.__moh_s_values = np.array([self.__moh_s(0)])
+            self.__moh_i_values = np.array([self.__moh_i(0)])
+            self.__moh_r_values = np.array([self.__moh_r(0)])
+            self.__moh_d_values = np.array([self.__moh_d(0)])
 
         self.__s_values = np.array([self.__s])
         self.__i_values = np.array([self.__i])
@@ -104,16 +105,17 @@ class Model:
 
             # Update our MoH data and simulation values.
 
-            try:
-                self.__moh_s_values = np.append(self.__moh_s_values, self.__moh_s(i))
-                self.__moh_i_values = np.append(self.__moh_i_values, self.__moh_i(i))
-                self.__moh_r_values = np.append(self.__moh_r_values, self.__moh_r(i))
-                self.__moh_d_values = np.append(self.__moh_d_values, self.__moh_d(i))
-            except:
-                self.__moh_s_values = np.append(self.__moh_s_values, math.nan)
-                self.__moh_i_values = np.append(self.__moh_i_values, math.nan)
-                self.__moh_r_values = np.append(self.__moh_r_values, math.nan)
-                self.__moh_d_values = np.append(self.__moh_d_values, math.nan)
+            if self.__use_moh_data:
+                try:
+                    self.__moh_s_values = np.append(self.__moh_s_values, self.__moh_s(i))
+                    self.__moh_i_values = np.append(self.__moh_i_values, self.__moh_i(i))
+                    self.__moh_r_values = np.append(self.__moh_r_values, self.__moh_r(i))
+                    self.__moh_d_values = np.append(self.__moh_d_values, self.__moh_d(i))
+                except:
+                    self.__moh_s_values = np.append(self.__moh_s_values, math.nan)
+                    self.__moh_i_values = np.append(self.__moh_i_values, math.nan)
+                    self.__moh_r_values = np.append(self.__moh_r_values, math.nan)
+                    self.__moh_d_values = np.append(self.__moh_d_values, math.nan)
 
             self.__s_values = np.append(self.__s_values, self.__s)
             self.__i_values = np.append(self.__i_values, self.__i)
@@ -129,30 +131,29 @@ class Model:
         fig.canvas.set_window_title('SIRD model')
 
         ax1 = ax[0]
-        ax2 = ax1.twinx()
-
-        ax1.bar(days, self.__moh_s_values - min(self.__moh_s_values), color=Model.S_COLOR, alpha=Model.MOH_ALPHA,
-                label='MoH S')
-        ax1.set_yticklabels(np.linspace(min(self.__moh_s_values), Model.NZ_POPULATION))
-        ax2.plot(days, self.__s_values, Model.S_COLOR, label='S')
-        plt.legend(loc='best')
+        ax1.plot(days, self.__s_values, Model.S_COLOR, label='S')
+        ax1.legend(loc='best')
+        if self.__use_moh_data:
+            ax2 = ax1.twinx()
+            ax2.bar(days, self.__moh_s_values - min(self.__moh_s_values), color=Model.S_COLOR, alpha=Model.MOH_ALPHA,
+                    label='MoH S')
+            ax2.set_yticklabels(np.linspace(min(self.__moh_s_values), Model.NZ_POPULATION))
 
         ax1 = ax[1]
-        ax2 = ax1.twinx()
-
-        ax1.bar(days, self.__moh_i_values, color=Model.I_COLOR, alpha=Model.MOH_ALPHA, label='MoH I')
-        ax1.bar(days, self.__moh_r_values, color=Model.R_COLOR, alpha=Model.MOH_ALPHA, label='MoH R')
-        ax2.plot(days, self.__i_values, Model.I_COLOR, label='I')
-        ax2.plot(days, self.__r_values, Model.R_COLOR, label='R')
-        plt.legend(loc='best')
+        ax1.plot(days, self.__i_values, Model.I_COLOR, label='I')
+        ax1.plot(days, self.__r_values, Model.R_COLOR, label='R')
+        ax1.legend(loc='best')
+        if self.__use_moh_data:
+            ax2 = ax1.twinx()
+            ax2.bar(days, self.__moh_i_values, color=Model.I_COLOR, alpha=Model.MOH_ALPHA, label='MoH I')
+            ax2.bar(days, self.__moh_r_values, color=Model.R_COLOR, alpha=Model.MOH_ALPHA, label='MoH R')
 
         ax1 = ax[2]
-        ax2 = ax1.twinx()
-
-        ax1.bar(days, self.__moh_d_values, color=Model.D_COLOR, alpha=Model.MOH_ALPHA, label='MoH D')
-        ax2.plot(days, self.__d_values, Model.D_COLOR, label='D')
-        plt.legend(loc='best')
-
+        ax1.plot(days, self.__d_values, Model.D_COLOR, label='D')
+        ax1.legend(loc='best')
+        if self.__use_moh_data:
+            ax2 = ax1.twinx()
+            ax2.bar(days, self.__moh_d_values, color=Model.D_COLOR, alpha=Model.MOH_ALPHA, label='MoH D')
         plt.xlabel('time (day)')
 
         plt.show()
