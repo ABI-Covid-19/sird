@@ -133,7 +133,7 @@ class Model:
 
         ax1.bar(days, self.__moh_s_values - min(self.__moh_s_values), color=Model.S_COLOR, alpha=Model.MOH_ALPHA,
                 label='MoH S')
-        ax1.set_yticklabels(np.arange(min(self.__moh_s_values), Model.NZ_POPULATION + 1))
+        ax1.set_yticklabels(np.linspace(min(self.__moh_s_values), Model.NZ_POPULATION))
         ax2.plot(days, self.__s_values, Model.S_COLOR, label='S')
         plt.legend(loc='best')
 
