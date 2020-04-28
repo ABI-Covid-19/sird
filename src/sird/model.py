@@ -130,12 +130,12 @@ class Model:
             #   dS/dt = -βIS/N
             #   dI/dt = βIS/N - γI - μI
             #   dR/dt = γI
-            #   dS/dt = μI
+            #   dD/dt = μI
 
             for j in range(Model.NB_OF_STEPS):
                 self.__s += Model.DELTA_T * -(self.__beta * self.__i * self.__s / self.__n)
                 self.__i += Model.DELTA_T * (
-                            self.__beta * self.__i * self.__s / self.__n - self.__gamma * self.__i - self.__mu * self.__i)
+                        self.__beta * self.__i * self.__s / self.__n - self.__gamma * self.__i - self.__mu * self.__i)
                 self.__r += Model.DELTA_T * (self.__gamma * self.__i)
                 self.__d += Model.DELTA_T * (self.__mu * self.__i)
 
