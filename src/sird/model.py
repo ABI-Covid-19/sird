@@ -70,20 +70,28 @@ class Model:
         return Model.__moh_data.iloc[day][1]
 
     def reset(self):
-        # Reset our SIRD model.
+        """
+        Reset our SIRD model.
+        """
 
         if self.__use_moh_data:
+            # We use the MoH data at day 0 as our initial guess for S, I, R and D.
+
             self.__s = self.__moh_s(0)
             self.__i = self.__moh_i(0)
             self.__r = self.__moh_r(0)
             self.__d = self.__moh_d(0)
             self.__n = Model.NZ_POPULATION
         else:
+            # Use the (initial) values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
+
             self.__s = 997
             self.__i = 3
             self.__r = 0
             self.__d = 0
             self.__n = 1000
+
+        # Use the values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
 
         self.__beta = 0.4
         self.__gamma = 0.035
