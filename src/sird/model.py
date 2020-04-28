@@ -126,12 +126,16 @@ class Model:
         # Run our SIRD simulation.
 
         for i in range(nb_of_days):
-            # Compute the SIRD model for one day.
+            # Compute the SIRD model for one day using:
+            #   dS/dt = -βIS/N
+            #   dI/dt = βIS/N - γI - μI
+            #   dR/dt = γI
+            #   dS/dt = μI
 
             for j in range(Model.NB_OF_STEPS):
-                self.__s -= Model.DELTA_T * (self.__beta * self.__i * self.__s / self.__n)
+                self.__s += Model.DELTA_T * -(self.__beta * self.__i * self.__s / self.__n)
                 self.__i += Model.DELTA_T * (
-                        self.__beta * self.__i * self.__s / self.__n - self.__gamma * self.__i - self.__mu * self.__i)
+                            self.__beta * self.__i * self.__s / self.__n - self.__gamma * self.__i - self.__mu * self.__i)
                 self.__r += Model.DELTA_T * (self.__gamma * self.__i)
                 self.__d += Model.DELTA_T * (self.__mu * self.__i)
 
