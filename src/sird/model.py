@@ -7,7 +7,7 @@ import pandas as pd
 
 class Model:
     """
-    SIRD model of Covid-19
+    SIRD model of Covid-19.
     """
 
     NZ_POPULATION = 5000000
@@ -22,7 +22,11 @@ class Model:
     __moh_data = None
 
     def __init__(self, use_moh_data=True):
-        # Retrieve some MoH data, if needed.
+        """
+        Initialise our Model object.
+        """
+
+        # Retrieve the MoH data (if requested).
 
         if use_moh_data and Model.__moh_data == None:
             Model.__moh_data = pd.read_csv(
@@ -38,15 +42,31 @@ class Model:
         self.reset()
 
     def __moh_s(self, day):
+        """
+        Return the MoH S value for the given day.
+        """
+
         return Model.NZ_POPULATION - self.__moh_i(day) - self.__moh_r(day) - self.__moh_d(day)
 
     def __moh_i(self, day):
+        """
+        Return the MoH I value for the given day.
+        """
+
         return Model.__moh_data.iloc[day][2]
 
     def __moh_r(self, day):
+        """
+        Return the MoH R value for the given day.
+        """
+
         return Model.__moh_data.iloc[day][0]
 
     def __moh_d(self, day):
+        """
+        Return the MoH D value for the given day.
+        """
+
         return Model.__moh_data.iloc[day][1]
 
     def reset(self):
@@ -82,18 +102,22 @@ class Model:
         self.__r_values = np.array([self.__r])
         self.__d_values = np.array([self.__d])
 
-    def run(self, sim_duration=100):
-        # Make sure that we were given a valid simulation duration.
+    def run(self, nb_of_days=100):
+        """
+        Run our SIRD model for the given number of days, taking advantage of the MoH data (if requested) to estimate the
+        values of β, γ and μ.
+        """
 
-        if not isinstance(sim_duration, int) or sim_duration <= 0:
-            print('The simulation duration (', sim_duration, ') must be an integer value greater than 0 (days).',
-                  sep='')
+        # Make sure that we were given a valid number of days.
+
+        if not isinstance(nb_of_days, int) or nb_of_days <= 0:
+            print('The number of days (', nb_of_days, ') must be an integer value greater than 0.', sep='')
 
             return
 
         # Run our SIRD simulation.
 
-        for i in range(sim_duration):
+        for i in range(nb_of_days):
             # Compute the SIRD model for one day.
 
             for j in range(Model.NB_OF_STEPS):
@@ -103,7 +127,7 @@ class Model:
                 self.__r += Model.DELTA_T * (self.__gamma * self.__i)
                 self.__d += Model.DELTA_T * (self.__mu * self.__i)
 
-            # Update our MoH data and simulation values.
+            # Update our MoH data (if requested) and simulation values.
 
             if self.__use_moh_data:
                 try:
@@ -123,12 +147,17 @@ class Model:
             self.__d_values = np.append(self.__d_values, self.__d)
 
     def plot(self):
-        # Plot the results.
+        """
+        Plot the results using three subplots for 1) S, 2) I and R, and 3) D. In each subplot, we plot the MoH data (if
+        requested) as bars and the computed value as a line.
+        """
 
         days = range(self.__s_values.size)
         fig, ax = plt.subplots(3, 1)
 
         fig.canvas.set_window_title('SIRD model')
+
+        # First subplot: S.
 
         ax1 = ax[0]
         ax1.plot(days, self.__s_values, Model.S_COLOR, label='S')
@@ -139,6 +168,8 @@ class Model:
                     label='MoH S')
             ax2.set_yticklabels(np.linspace(min(self.__moh_s_values), Model.NZ_POPULATION))
 
+        # Second subplot: I and R.
+
         ax1 = ax[1]
         ax1.plot(days, self.__i_values, Model.I_COLOR, label='I')
         ax1.plot(days, self.__r_values, Model.R_COLOR, label='R')
@@ -147,6 +178,8 @@ class Model:
             ax2 = ax1.twinx()
             ax2.bar(days, self.__moh_i_values, color=Model.I_COLOR, alpha=Model.MOH_ALPHA, label='MoH I')
             ax2.bar(days, self.__moh_r_values, color=Model.R_COLOR, alpha=Model.MOH_ALPHA, label='MoH R')
+
+        # Third subplot: D.
 
         ax1 = ax[2]
         ax1.plot(days, self.__d_values, Model.D_COLOR, label='D')
@@ -159,24 +192,40 @@ class Model:
         plt.show()
 
     def s(self, day=-1):
+        """
+        Return all the S values (if day=-1) or its value for a given day.
+        """
+
         if day == -1:
             return self.__s_values
         else:
             return self.__s_values[day]
 
     def i(self, day=-1):
+        """
+        Return all the I values (if day=-1) or its value for a given day.
+        """
+
         if day == -1:
             return self.__i_values
         else:
             return self.__i_values[day]
 
     def r(self, day=-1):
+        """
+        Return all the R values (if day=-1) or its value for a given day.
+        """
+
         if day == -1:
             return self.__r_values
         else:
             return self.__r_values[day]
 
     def d(self, day=-1):
+        """
+        Return all the D values (if day=-1) or its value for a given day.
+        """
+
         if day == -1:
             return self.__d_values
         else:
@@ -184,7 +233,11 @@ class Model:
 
 
 if __name__ == '__main__':
+    # Create an instance of the SIRD model, asking for the MoH data to be used.
+
     m = Model()
+
+    # Run the model and plot its S, I, R and D values, together with the MoH data.
 
     m.run()
     m.plot()
