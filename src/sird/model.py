@@ -1,3 +1,5 @@
+import math
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -11,6 +13,11 @@ class Model:
     NZ_POPULATION = 5000000
     NB_OF_STEPS = 100
     DELTA_T = 1 / NB_OF_STEPS
+    S_COLOR = '#0071bd'
+    I_COLOR = '#d9521a'
+    R_COLOR = '#edb020'
+    D_COLOR = '#7e2f8e'
+    MOH_STYLE = 'dashed'
 
     __moh_data = None
 
@@ -62,7 +69,12 @@ class Model:
         self.__gamma = 0.035
         self.__mu = 0.005
 
-        # Reset our simulation values.
+        # Reset our MoH data and simulation values.
+
+        self.__moh_s_values = np.array([self.__moh_s(0)])
+        self.__moh_i_values = np.array([self.__moh_i(0)])
+        self.__moh_r_values = np.array([self.__moh_r(0)])
+        self.__moh_d_values = np.array([self.__moh_d(0)])
 
         self.__s_values = np.array([self.__s])
         self.__i_values = np.array([self.__i])
@@ -99,7 +111,18 @@ class Model:
                 self.__r += Model.DELTA_T * (self.__gamma * self.__i)
                 self.__d += Model.DELTA_T * (self.__mu * self.__i)
 
-            # Update our simulation results.
+            # Update our MoH data and simulation values.
+
+            try:
+                self.__moh_s_values = np.append(self.__moh_s_values, self.__moh_s(i))
+                self.__moh_i_values = np.append(self.__moh_i_values, self.__moh_i(i))
+                self.__moh_r_values = np.append(self.__moh_r_values, self.__moh_r(i))
+                self.__moh_d_values = np.append(self.__moh_d_values, self.__moh_d(i))
+            except:
+                self.__moh_s_values = np.append(self.__moh_s_values, math.nan)
+                self.__moh_i_values = np.append(self.__moh_i_values, math.nan)
+                self.__moh_r_values = np.append(self.__moh_r_values, math.nan)
+                self.__moh_d_values = np.append(self.__moh_d_values, math.nan)
 
             self.__s_values = np.append(self.__s_values, self.__s)
             self.__i_values = np.append(self.__i_values, self.__i)
@@ -109,16 +132,34 @@ class Model:
     def plot(self):
         # Plot the results.
 
-        plt.clf()  # In case there is already a Matplotlib window.
-        plt.gcf().canvas.set_window_title('SIRD model')
-
         days = range(self.__s_values.size)
+        fig, ax = plt.subplots(3, 1)
 
-        plt.plot(days, self.__s_values, '#0071bd', label='S')
-        plt.plot(days, self.__i_values, '#d9521a', label='I')
-        plt.plot(days, self.__r_values, '#edb020', label='R')
-        plt.plot(days, self.__d_values, '#7e2f8e', label='D')
+        fig.canvas.set_window_title('SIRD model')
+
+        ax1 = ax[0]
+        ax2 = ax1.twinx()
+
+        ax1.plot(days, self.__moh_s_values, Model.S_COLOR, linestyle=Model.MOH_STYLE, label='MoH S')
+        ax2.plot(days, self.__s_values, Model.S_COLOR, label='S')
         plt.legend(loc='best')
+
+        ax1 = ax[1]
+        ax2 = ax1.twinx()
+
+        ax1.plot(days, self.__moh_i_values, Model.I_COLOR, linestyle=Model.MOH_STYLE, label='MoH I')
+        ax1.plot(days, self.__moh_r_values, Model.R_COLOR, linestyle=Model.MOH_STYLE, label='MoH R')
+        ax2.plot(days, self.__i_values, Model.I_COLOR, label='I')
+        ax2.plot(days, self.__r_values, Model.R_COLOR, label='R')
+        plt.legend(loc='best')
+
+        ax1 = ax[2]
+        ax2 = ax1.twinx()
+
+        ax1.plot(days, self.__moh_d_values, Model.D_COLOR, linestyle=Model.MOH_STYLE, label='MoH D')
+        ax2.plot(days, self.__d_values, Model.D_COLOR, label='D')
+        plt.legend(loc='best')
+
         plt.xlabel('time (day)')
 
         plt.show()
