@@ -12,6 +12,9 @@ class Model:
     """
 
     NZ_POPULATION = 5000000
+    I_ERROR = 2  # The MoH has, on occasion, reported up to 2 people having been wrongly categorised as infected.
+    R_ERROR = 0  # People either recover or they don't, so no error possible.
+    D_ERROR = 0  # People either die or they don't, so no error possible.
     NB_OF_STEPS = 100
     DELTA_T = 1 / NB_OF_STEPS
     S_COLOR = '#0071bd'
@@ -85,28 +88,28 @@ class Model:
         Return the S value based on the values of I, R, D and N.
         """
 
-        return self.__n - self.__x.sum()
+        return self.__n - self.__x_p.sum()
 
     def __i_value(self):
         """
         Return the I value.
         """
 
-        return self.__x[0]
+        return self.__x_p[0]
 
     def __r_value(self):
         """
         Return the R value.
         """
 
-        return self.__x[1]
+        return self.__x_p[1]
 
     def __d_value(self):
         """
         Return the D value.
         """
 
-        return self.__x[2]
+        return self.__x_p[2]
 
     def reset(self):
         """
@@ -116,12 +119,12 @@ class Model:
         if self.__use_moh_data:
             # We use the MoH data at day 0 as our initial guess for S, I, R and D.
 
-            self.__x = np.array([self.__moh_i(0), self.__moh_r(0), self.__moh_d(0)])
+            self.__x_p = np.array([self.__moh_i(0), self.__moh_r(0), self.__moh_d(0)])
             self.__n = Model.NZ_POPULATION
         else:
             # Use the (initial) values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
 
-            self.__x = np.array([3, 0, 0])
+            self.__x_p = np.array([3, 0, 0])
             self.__n = 1000
 
         # Use the values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
@@ -160,10 +163,24 @@ class Model:
 
             return
 
+        # Some initial conditions for our Kalman filter.
+
+        if self.__use_moh_data:
+            # State covariance matrix.
+
+            p = np.array([[Model.I_ERROR ** 2, Model.I_ERROR * Model.R_ERROR, Model.I_ERROR * Model.D_ERROR],
+                          [Model.R_ERROR * Model.I_ERROR, Model.R_ERROR ** 2, Model.R_ERROR * Model.D_ERROR],
+                          [Model.D_ERROR * Model.I_ERROR, Model.D_ERROR * Model.R_ERROR, Model.D_ERROR ** 2]])
+
+            # Measurement covariance matrix. Note that we use the same I, R and D errors for both our state and
+            # measurement covariance matrices because... why not?
+
+            r = p
+
         # Run our SIRD simulation.
 
         for i in range(1, nb_of_days + 1):
-            # Compute the SIRD model for one day using:
+            # Compute our predicted state, i.e. compute the SIRD model for one day using:
             #   dI/dt = βIS/N - γI - μI
             #   dR/dt = γI
             #   dD/dt = μI
@@ -173,7 +190,7 @@ class Model:
                     [[1 + Model.DELTA_T * (self.__beta * self.__s_value() / self.__n - self.__gamma - self.__mu), 0, 0],
                      [Model.DELTA_T * self.__gamma, 1, 0],
                      [Model.DELTA_T * self.__mu, 0, 1]])
-                self.__x = a.dot(self.__x)
+                self.__x_p = a.dot(self.__x_p)
 
             # Update our MoH data (if requested) and simulation values.
 
@@ -196,6 +213,62 @@ class Model:
             self.__beta_values = np.append(self.__beta_values, self.__beta)
             self.__gamma_values = np.append(self.__gamma_values, self.__gamma)
             self.__mu_values = np.append(self.__mu_values, self.__mu)
+
+            # Compute our Kalman filter:
+
+            if self.__moh_data_available(i):
+                # Compute our predicted state covariance matrix using
+                #   Pp(t) = A·P(t-1)·transpose(A) + Q(t)
+                # where A is the matrix used to compute the SIRD model. Q(t) is the process noise covariance matrix,
+                # which we don't account for here. Otherwise, note that dt is equal to 1 day when we apply our Kalman
+                # filter, so we can ignore it in our calculation of our A matrix.
+
+                a = np.array(
+                    [[1 + self.__beta * self.__s_value() / self.__n - self.__gamma - self.__mu, 0, 0],
+                     [self.__gamma, 1, 0],
+                     [self.__mu, 0, 1]])
+                p_p = a.dot(p).dot(a.transpose())
+
+                # Compute our Kalman gain using
+                #          Pp(t)·transpose(H)
+                #   K = -----------------------
+                #       H·Pp(t)·tranpose(H) + R
+                # where H is a matrix that ensures us that K ends up in the correct shape. Here, H is the identity
+                # matrix, so we can ignore it in our calculation of K. Otherwise, R is the measurement covariance
+                # matrix.
+
+                k = p_p / (p_p + r)
+
+                # Compute our new observation using
+                #   Y(t) = C·Ym(t) + Z(t)
+                # where C is a matrix that ensures us that Ym(t) ends up in the correct shape. Here, C is the identity
+                # matrix, so we can ignore it in our calculation of Y(t). Ym(t) contains the I, R and D values from
+                # the MoH at time t. Z(t) is some noise in our measurements, which we don't have, so we can ignore it
+                # in our calculation of Y(t).
+
+                y = np.array([self.__moh_i(i), self.__moh_r(i), self.__moh_d(i)])
+
+                # Compute our new state using
+                #   X(t) = Xp(t) + K·(Y(t) - H·Xp(t))
+                # where Xp(t) is our predicted current state, i.e. as computed by our SIRD model.
+
+                x = self.__x_p + k.dot(y - self.__x_p)
+
+                # Update our state covariance matrix using
+                #   P(t) = (I - K·H)·Pp(t)
+                # where I is the identity matrix.
+
+                p = (np.identity(3) - k).dot(p_p)
+
+                # Get ready for the next day by updating our predicted state and values for β, γ and μ.
+
+                new_s = self.__n - x.sum()
+
+                self.__x_p = x
+
+                self.__beta = (new_s - self.__s_values[i - 1]) / (x[0] * new_s) * self.__n
+                self.__gamma = (x[1] - self.__r_values[i - 1]) / x[0]
+                self.__mu = (x[2] - self.__d_values[i - 1]) / x[0]
 
     def plot(self, two_axes=False):
         """
