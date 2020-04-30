@@ -73,6 +73,13 @@ class Model:
 
         return Model.__moh_data.iloc[day][1]
 
+    def __moh_data_available(self, day):
+        """
+        Return whether some MoH data is available for the given day.
+        """
+
+        return day < Model.__moh_data.shape[0] if self.__use_moh_data else False
+
     def __s_value(self):
         """
         Return the S value based on the values of I, R, D and N.
@@ -155,17 +162,16 @@ class Model:
 
             # Update our MoH data (if requested) and simulation values.
 
-            if self.__use_moh_data:
-                try:
-                    self.__moh_s_values = np.append(self.__moh_s_values, self.__moh_s(i))
-                    self.__moh_i_values = np.append(self.__moh_i_values, self.__moh_i(i))
-                    self.__moh_r_values = np.append(self.__moh_r_values, self.__moh_r(i))
-                    self.__moh_d_values = np.append(self.__moh_d_values, self.__moh_d(i))
-                except:
-                    self.__moh_s_values = np.append(self.__moh_s_values, math.nan)
-                    self.__moh_i_values = np.append(self.__moh_i_values, math.nan)
-                    self.__moh_r_values = np.append(self.__moh_r_values, math.nan)
-                    self.__moh_d_values = np.append(self.__moh_d_values, math.nan)
+            if self.__moh_data_available(i):
+                self.__moh_s_values = np.append(self.__moh_s_values, self.__moh_s(i))
+                self.__moh_i_values = np.append(self.__moh_i_values, self.__moh_i(i))
+                self.__moh_r_values = np.append(self.__moh_r_values, self.__moh_r(i))
+                self.__moh_d_values = np.append(self.__moh_d_values, self.__moh_d(i))
+            else:
+                self.__moh_s_values = np.append(self.__moh_s_values, math.nan)
+                self.__moh_i_values = np.append(self.__moh_i_values, math.nan)
+                self.__moh_r_values = np.append(self.__moh_r_values, math.nan)
+                self.__moh_d_values = np.append(self.__moh_d_values, math.nan)
 
             self.__s_values = np.append(self.__s_values, self.__s_value())
             self.__i_values = np.append(self.__i_values, self.__i)
