@@ -266,9 +266,9 @@ class Model:
 
                 self.__x_p = x
 
-                self.__beta = (new_s - self.__s_values[i - 1]) / (x[0] * new_s) * self.__n
-                self.__gamma = (x[1] - self.__r_values[i - 1]) / x[0]
-                self.__mu = (x[2] - self.__d_values[i - 1]) / x[0]
+                self.__beta = (new_s - self.__s_values[i - 1]) / (self.__i_value() * new_s) * self.__n
+                self.__gamma = (self.__r_value() - self.__r_values[i - 1]) / self.__i_value()
+                self.__mu = (self.__d_value() - self.__d_values[i - 1]) / self.__i_value()
 
     def plot(self, two_axes=False):
         """
