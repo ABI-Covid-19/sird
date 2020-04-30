@@ -138,7 +138,7 @@ class Model:
 
         # Run our SIRD simulation.
 
-        for i in range(nb_of_days):
+        for i in range(1, nb_of_days + 1):
             # Compute the SIRD model for one day using:
             #   dI/dt = βIS/N - γI - μI
             #   dR/dt = γI
