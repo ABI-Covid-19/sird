@@ -197,7 +197,7 @@ class Model:
             self.__gamma_values = np.append(self.__gamma_values, self.__gamma)
             self.__mu_values = np.append(self.__mu_values, self.__mu)
 
-    def plot(self):
+    def plot(self, two_axes=False):
         """
         Plot the results using five subplots for 1) S, 2) I and R, 3) D, 4) β, and 5) γ and μ. In each subplot, we plot
         the MoH data (if requested) as bars and the computed value as a line.
@@ -214,7 +214,7 @@ class Model:
         ax1.plot(days, self.__s_values, Model.S_COLOR, label='S')
         ax1.legend(loc='best')
         if self.__use_moh_data:
-            ax2 = ax1.twinx()
+            ax2 = ax1.twinx() if two_axes else ax1
             ax2.bar(days, self.__moh_s_values - min(self.__moh_s_values), color=Model.S_COLOR, alpha=Model.MOH_ALPHA,
                     label='MoH S')
             ax2.set_yticklabels(np.linspace(min(self.__moh_s_values), Model.NZ_POPULATION))
@@ -226,7 +226,7 @@ class Model:
         ax1.plot(days, self.__r_values, Model.R_COLOR, label='R')
         ax1.legend(loc='best')
         if self.__use_moh_data:
-            ax2 = ax1.twinx()
+            ax2 = ax1.twinx() if two_axes else ax1
             ax2.bar(days, self.__moh_i_values, color=Model.I_COLOR, alpha=Model.MOH_ALPHA, label='MoH I')
             ax2.bar(days, self.__moh_r_values, color=Model.R_COLOR, alpha=Model.MOH_ALPHA, label='MoH R')
 
@@ -236,7 +236,7 @@ class Model:
         ax1.plot(days, self.__d_values, Model.D_COLOR, label='D')
         ax1.legend(loc='best')
         if self.__use_moh_data:
-            ax2 = ax1.twinx()
+            ax2 = ax1.twinx() if two_axes else ax1
             ax2.bar(days, self.__moh_d_values, color=Model.D_COLOR, alpha=Model.MOH_ALPHA, label='MoH D')
 
         # Fourth subplot: β.
@@ -306,4 +306,4 @@ if __name__ == '__main__':
     # Run the model and plot its S, I, R and D values, together with the MoH data.
 
     m.run()
-    m.plot()
+    m.plot(True)
