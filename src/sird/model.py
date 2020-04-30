@@ -17,6 +17,9 @@ class Model:
     I_COLOR = '#d9521a'
     R_COLOR = '#edb020'
     D_COLOR = '#7e2f8e'
+    BETA_COLOR = '#7e2f8e'
+    GAMMA_COLOR = '#4dbeee'
+    MU_COLOR = '#a2142f'
     MOH_ALPHA = 0.3
 
     __moh_data = None
@@ -110,6 +113,10 @@ class Model:
         self.__r_values = np.array([self.__r])
         self.__d_values = np.array([self.__d])
 
+        self.__beta_values = np.array([self.__beta])
+        self.__gamma_values = np.array([self.__gamma])
+        self.__mu_values = np.array([self.__mu])
+
     def run(self, nb_of_days=100):
         """
         Run our SIRD model for the given number of days, taking advantage of the MoH data (if requested) to estimate the
@@ -158,14 +165,18 @@ class Model:
             self.__r_values = np.append(self.__r_values, self.__r)
             self.__d_values = np.append(self.__d_values, self.__d)
 
+            self.__beta_values = np.append(self.__beta_values, self.__beta)
+            self.__gamma_values = np.append(self.__gamma_values, self.__gamma)
+            self.__mu_values = np.append(self.__mu_values, self.__mu)
+
     def plot(self):
         """
-        Plot the results using three subplots for 1) S, 2) I and R, and 3) D. In each subplot, we plot the MoH data (if
-        requested) as bars and the computed value as a line.
+        Plot the results using five subplots for 1) S, 2) I and R, 3) D, 4) β, and 5) γ and μ. In each subplot, we plot
+        the MoH data (if requested) as bars and the computed value as a line.
         """
 
         days = range(self.__s_values.size)
-        fig, ax = plt.subplots(3, 1)
+        fig, ax = plt.subplots(5, 1)
 
         fig.canvas.set_window_title('SIRD model')
 
@@ -199,6 +210,19 @@ class Model:
         if self.__use_moh_data:
             ax2 = ax1.twinx()
             ax2.bar(days, self.__moh_d_values, color=Model.D_COLOR, alpha=Model.MOH_ALPHA, label='MoH D')
+
+        # Fourth subplot: β.
+
+        ax1 = ax[3]
+        ax1.plot(days, self.__beta_values, Model.BETA_COLOR, label='β')
+        ax1.legend(loc='best')
+
+        # Fourth subplot: γ and μ.
+
+        ax1 = ax[4]
+        ax1.plot(days, self.__gamma_values, Model.GAMMA_COLOR, label='γ')
+        ax1.plot(days, self.__mu_values, Model.MU_COLOR, label='μ')
+        ax1.legend(loc='best')
         plt.xlabel('time (day)')
 
         plt.show()
