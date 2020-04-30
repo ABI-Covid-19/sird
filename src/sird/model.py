@@ -8,6 +8,7 @@ import pandas as pd
 class Model:
     """
     SIRD model of Covid-19.
+    Note that N = S+I+R+D and that we have data from the MoH for I, R and D. So, there is no need to compute S as such.
     """
 
     NZ_POPULATION = 5000000
@@ -72,6 +73,13 @@ class Model:
 
         return Model.__moh_data.iloc[day][1]
 
+    def __s_value(self):
+        """
+        Return the S value based on the values of I, R, D and N.
+        """
+
+        return self.__n - self.__i - self.__r - self.__d
+
     def reset(self):
         """
         Reset our SIRD model.
@@ -80,7 +88,6 @@ class Model:
         if self.__use_moh_data:
             # We use the MoH data at day 0 as our initial guess for S, I, R and D.
 
-            self.__s = self.__moh_s(0)
             self.__i = self.__moh_i(0)
             self.__r = self.__moh_r(0)
             self.__d = self.__moh_d(0)
@@ -88,7 +95,6 @@ class Model:
         else:
             # Use the (initial) values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
 
-            self.__s = 997
             self.__i = 3
             self.__r = 0
             self.__d = 0
@@ -108,7 +114,7 @@ class Model:
             self.__moh_r_values = np.array([self.__moh_r(0)])
             self.__moh_d_values = np.array([self.__moh_d(0)])
 
-        self.__s_values = np.array([self.__s])
+        self.__s_values = np.array([self.__s_value()])
         self.__i_values = np.array([self.__i])
         self.__r_values = np.array([self.__r])
         self.__d_values = np.array([self.__d])
@@ -134,17 +140,18 @@ class Model:
 
         for i in range(nb_of_days):
             # Compute the SIRD model for one day using:
-            #   dS/dt = -βIS/N
             #   dI/dt = βIS/N - γI - μI
             #   dR/dt = γI
             #   dD/dt = μI
 
             for j in range(Model.NB_OF_STEPS):
-                self.__s += Model.DELTA_T * -(self.__beta * self.__i * self.__s / self.__n)
-                self.__i += Model.DELTA_T * (
-                        self.__beta * self.__i * self.__s / self.__n - self.__gamma * self.__i - self.__mu * self.__i)
-                self.__r += Model.DELTA_T * (self.__gamma * self.__i)
-                self.__d += Model.DELTA_T * (self.__mu * self.__i)
+                dI_dt = self.__beta * self.__i * self.__s_value() / self.__n - self.__gamma * self.__i - self.__mu * self.__i
+                dR_dt = self.__gamma * self.__i
+                dD_dt = self.__mu * self.__i
+
+                self.__i += Model.DELTA_T * dI_dt
+                self.__r += Model.DELTA_T * dR_dt
+                self.__d += Model.DELTA_T * dD_dt
 
             # Update our MoH data (if requested) and simulation values.
 
@@ -160,7 +167,7 @@ class Model:
                     self.__moh_r_values = np.append(self.__moh_r_values, math.nan)
                     self.__moh_d_values = np.append(self.__moh_d_values, math.nan)
 
-            self.__s_values = np.append(self.__s_values, self.__s)
+            self.__s_values = np.append(self.__s_values, self.__s_value())
             self.__i_values = np.append(self.__i_values, self.__i)
             self.__r_values = np.append(self.__r_values, self.__r)
             self.__d_values = np.append(self.__d_values, self.__d)
