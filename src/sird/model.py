@@ -176,9 +176,9 @@ class Model:
         """
 
         days = range(self.__s_values.size)
-        fig, ax = plt.subplots(5, 1)
+        fig, ax = plt.subplots(5 if self.__use_moh_data else 3, 1)
 
-        fig.canvas.set_window_title('SIRD model')
+        fig.canvas.set_window_title('SIRD model fitted to MoH data' if self.__use_moh_data else 'Default SIRD model')
 
         # First subplot: S.
 
@@ -213,18 +213,20 @@ class Model:
 
         # Fourth subplot: β.
 
-        ax1 = ax[3]
-        ax1.plot(days, self.__beta_values, Model.BETA_COLOR, label='β')
-        ax1.legend(loc='best')
+        if self.__use_moh_data:
+            ax1 = ax[3]
+            ax1.plot(days, self.__beta_values, Model.BETA_COLOR, label='β')
+            ax1.legend(loc='best')
 
         # Fourth subplot: γ and μ.
 
-        ax1 = ax[4]
-        ax1.plot(days, self.__gamma_values, Model.GAMMA_COLOR, label='γ')
-        ax1.plot(days, self.__mu_values, Model.MU_COLOR, label='μ')
-        ax1.legend(loc='best')
-        plt.xlabel('time (day)')
+        if self.__use_moh_data:
+            ax1 = ax[4]
+            ax1.plot(days, self.__gamma_values, Model.GAMMA_COLOR, label='γ')
+            ax1.plot(days, self.__mu_values, Model.MU_COLOR, label='μ')
+            ax1.legend(loc='best')
 
+        plt.xlabel('time (day)')
         plt.show()
 
     def s(self, day=-1):
