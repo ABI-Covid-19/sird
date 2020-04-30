@@ -85,7 +85,28 @@ class Model:
         Return the S value based on the values of I, R, D and N.
         """
 
-        return self.__n - self.__i - self.__r - self.__d
+        return self.__n - self.__x.sum()
+
+    def __i_value(self):
+        """
+        Return the I value.
+        """
+
+        return self.__x[0]
+
+    def __r_value(self):
+        """
+        Return the R value.
+        """
+
+        return self.__x[1]
+
+    def __d_value(self):
+        """
+        Return the D value.
+        """
+
+        return self.__x[2]
 
     def reset(self):
         """
@@ -95,16 +116,12 @@ class Model:
         if self.__use_moh_data:
             # We use the MoH data at day 0 as our initial guess for S, I, R and D.
 
-            self.__i = self.__moh_i(0)
-            self.__r = self.__moh_r(0)
-            self.__d = self.__moh_d(0)
+            self.__x = np.array([self.__moh_i(0), self.__moh_r(0), self.__moh_d(0)])
             self.__n = Model.NZ_POPULATION
         else:
             # Use the (initial) values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
 
-            self.__i = 3
-            self.__r = 0
-            self.__d = 0
+            self.__x = np.array([3, 0, 0])
             self.__n = 1000
 
         # Use the values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
@@ -122,9 +139,9 @@ class Model:
             self.__moh_d_values = np.array([self.__moh_d(0)])
 
         self.__s_values = np.array([self.__s_value()])
-        self.__i_values = np.array([self.__i])
-        self.__r_values = np.array([self.__r])
-        self.__d_values = np.array([self.__d])
+        self.__i_values = np.array([self.__i_value()])
+        self.__r_values = np.array([self.__r_value()])
+        self.__d_values = np.array([self.__d_value()])
 
         self.__beta_values = np.array([self.__beta])
         self.__gamma_values = np.array([self.__gamma])
@@ -152,13 +169,11 @@ class Model:
             #   dD/dt = μI
 
             for j in range(Model.NB_OF_STEPS):
-                dI_dt = self.__beta * self.__i * self.__s_value() / self.__n - self.__gamma * self.__i - self.__mu * self.__i
-                dR_dt = self.__gamma * self.__i
-                dD_dt = self.__mu * self.__i
-
-                self.__i += Model.DELTA_T * dI_dt
-                self.__r += Model.DELTA_T * dR_dt
-                self.__d += Model.DELTA_T * dD_dt
+                a = np.array(
+                    [[1 + Model.DELTA_T * (self.__beta * self.__s_value() / self.__n - self.__gamma - self.__mu), 0, 0],
+                     [Model.DELTA_T * self.__gamma, 1, 0],
+                     [Model.DELTA_T * self.__mu, 0, 1]])
+                self.__x = a.dot(self.__x)
 
             # Update our MoH data (if requested) and simulation values.
 
@@ -174,9 +189,9 @@ class Model:
                 self.__moh_d_values = np.append(self.__moh_d_values, math.nan)
 
             self.__s_values = np.append(self.__s_values, self.__s_value())
-            self.__i_values = np.append(self.__i_values, self.__i)
-            self.__r_values = np.append(self.__r_values, self.__r)
-            self.__d_values = np.append(self.__d_values, self.__d)
+            self.__i_values = np.append(self.__i_values, self.__i_value())
+            self.__r_values = np.append(self.__r_values, self.__r_value())
+            self.__d_values = np.append(self.__d_values, self.__d_value())
 
             self.__beta_values = np.append(self.__beta_values, self.__beta)
             self.__gamma_values = np.append(self.__gamma_values, self.__gamma)
