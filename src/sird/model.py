@@ -35,7 +35,7 @@ class Model:
 
         # Retrieve the MoH data (if requested).
 
-        if use_moh_data and Model.__moh_data == None:
+        if use_moh_data and Model.__moh_data is None:
             Model.__moh_data = pd.read_csv(
                 'https://docs.google.com/spreadsheets/u/1/d/16UMnHbnBHju-fK45aSdaJhVmrXJpy71oxSiN_AvqV84/export?format=csv&id=16UMnHbnBHju-fK45aSdaJhVmrXJpy71oxSiN_AvqV84&gid=0',
                 usecols=[7, 9, 11])
