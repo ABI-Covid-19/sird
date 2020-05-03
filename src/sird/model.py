@@ -233,15 +233,14 @@ class Model:
                 #          Pp(t)·transpose(H)
                 #   K = -----------------------
                 #       H·Pp(t)·tranpose(H) + R
-                # where H is a matrix that ensures us that K ends up in the correct shape. Here, H is the identity
-                # matrix, so we can ignore it in our calculation of K. Otherwise, R is the measurement covariance
-                # matrix.
+                # where H is a matrix that ensures that K ends up in the correct shape. Here, H is the identity matrix,
+                # so we can ignore it in our calculation of K. Otherwise, R is the measurement covariance matrix.
 
                 k = p_p / (p_p + r)
 
                 # Compute our new observation using
                 #   Y(t) = C·Ym(t) + Z(t)
-                # where C is a matrix that ensures us that Ym(t) ends up in the correct shape. Here, C is the identity
+                # where C is a matrix that ensures that Ym(t) ends up in the correct shape. Here, C is the identity
                 # matrix, so we can ignore it in our calculation of Y(t). Ym(t) contains the I, R and D values from
                 # the MoH at time t. Z(t) is some noise in our measurements, which we don't have, so we can ignore it
                 # in our calculation of Y(t).
