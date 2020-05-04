@@ -131,8 +131,7 @@ class Model:
                             [80753.41545869978, 3673339.6782685057, 1027149.0284963408],
                             [71468.50411483257, 3999072.2108796923, 1001537.6969717704],
                             [65462.806931105675, 3828660.5137182437, 1069427.0427910818],
-                            [60686.37540621936, 3869905.7312526084, 1047891.1000049697],
-                            ])
+                            [60686.37540621936, 3869905.7312526084, 1047891.1000049697]])
 
     class Use(Enum):
         WIKIPEDIA = auto()
@@ -278,8 +277,7 @@ class Model:
                                             )
 
             self.__ukf = UnscentedKalmanFilter(Model.__N_FILTERED, Model.__N_MEASURED, Model.__DELTA_T, self.__h,
-                                               Model.__f,
-                                               points)
+                                               Model.__f, points)
 
             self.__ukf.x = np.array(
                 [self.__i(0), self.__r(0), self.__d(0), self.__beta, self.__gamma, self.__mu])
@@ -324,12 +322,11 @@ class Model:
         """
 
         model_self = kwargs.get('model_self')
-        a = np.array(
-            [[1 + dt * (
+        a = np.array([[1 + dt * (
                     model_self.__beta * model_self.__s_value() / model_self.__n - model_self.__gamma - model_self.__mu),
-              0, 0],
-             [dt * model_self.__gamma, 1, 0],
-             [dt * model_self.__mu, 0, 1]])
+                       0, 0],
+                      [dt * model_self.__gamma, 1, 0],
+                      [dt * model_self.__mu, 0, 1]])
 
         return a @ x
 
