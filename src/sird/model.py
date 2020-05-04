@@ -214,61 +214,6 @@ class Model:
             self.__gamma_values = np.append(self.__gamma_values, self.__gamma)
             self.__mu_values = np.append(self.__mu_values, self.__mu)
 
-            # Compute our Kalman filter:
-
-            if self.__moh_data_available(i):
-                # Compute our predicted state covariance matrix using
-                #   Pp(t) = A·P(t-1)·A.T + Q(t)
-                # where A is the matrix used to compute the SIRD model. Q(t) is the process noise covariance matrix,
-                # which we don't account for here. Otherwise, note that dt is equal to 1 day when we apply our Kalman
-                # filter, so we can ignore it in our calculation of our A matrix.
-
-                a = np.array(
-                    [[1 + self.__beta * self.__s_value() / self.__n - self.__gamma - self.__mu, 0, 0],
-                     [self.__gamma, 1, 0],
-                     [self.__mu, 0, 1]])
-                p_p = a.dot(p).dot(a.T)
-
-                # Compute our Kalman gain using
-                #          Pp(t)·H.T
-                #   K = ---------------
-                #       H·Pp(t)·H.T + R
-                # where H is a matrix that ensures that K ends up in the correct shape. Here, H is the identity matrix,
-                # so we can ignore it in our calculation of K. Otherwise, R is the measurement covariance matrix.
-
-                k = p_p / (p_p + r)
-
-                # Compute our new observation using
-                #   Y(t) = C·Ym(t) + Z(t)
-                # where C is a matrix that ensures that Ym(t) ends up in the correct shape. Here, C is the identity
-                # matrix, so we can ignore it in our calculation of Y(t). Ym(t) contains the I, R and D values from
-                # the MoH at time t. Z(t) is some noise in our measurements, which we don't have, so we can ignore it
-                # in our calculation of Y(t).
-
-                y = np.array([self.__moh_i(i), self.__moh_r(i), self.__moh_d(i)])
-
-                # Compute our new state using
-                #   X(t) = Xp(t) + K·(Y(t) - H·Xp(t))
-                # where Xp(t) is our predicted current state, i.e. as computed by our SIRD model.
-
-                x = self.__x_p + k.dot(y - self.__x_p)
-
-                # Update our state covariance matrix using
-                #   P(t) = (I - K·H)·Pp(t)
-                # where I is the identity matrix.
-
-                p = (np.identity(3) - k).dot(p_p)
-
-                # Get ready for the next day by updating our predicted state and values for β, γ and μ.
-
-                new_s = self.__n - x.sum()
-
-                self.__x_p = x
-
-                self.__beta = (new_s - self.__s_values[i - 1]) / (self.__i_value() * new_s) * self.__n
-                self.__gamma = (self.__r_value() - self.__r_values[i - 1]) / self.__i_value()
-                self.__mu = (self.__d_value() - self.__d_values[i - 1]) / self.__i_value()
-
     def plot(self, two_axes=False):
         """
         Plot the results using five subplots for 1) S, 2) I and R, 3) D, 4) β, and 5) γ and μ. In each subplot, we plot
