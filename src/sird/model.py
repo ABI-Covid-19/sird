@@ -156,6 +156,32 @@ class Model:
 
         self.__use_data = self.__use_moh_data or self.__use_test_data
 
+        # Declare some internal variables (that will then be initialised through our call to reset()).
+        # Note: this is to make PEP 8 happy.
+
+        self.__beta = None
+        self.__gamma = None
+        self.__mu = None
+
+        self.__ukf = None
+
+        self.__x_p = None
+        self.__n = None
+
+        self.__data_s_values = None
+        self.__data_i_values = None
+        self.__data_r_values = None
+        self.__data_d_values = None
+
+        self.__s_values = None
+        self.__i_values = None
+        self.__r_values = None
+        self.__d_values = None
+
+        self.__beta_values = None
+        self.__gamma_values = None
+        self.__mu_values = None
+
         # Initialise (i.e. reset) our SIRD model.
 
         self.reset()
@@ -372,9 +398,13 @@ class Model:
         days = range(self.__s_values.size)
         fig, ax = plt.subplots(5 if self.__use_data else 3, 1, figsize=(11, 13))
 
-        fig.canvas.set_window_title('SIRD model fitted to MoH data' if self.__use_moh_data
-                                    else 'SIRD model fitted to test data' if self.__use_test_data
-        else 'Default SIRD model')
+        if self.__use_moh_data:
+            fig.canvas.set_window_title('SIRD model fitted to MoH data')
+        else:
+            if self.__use_test_data:
+                fig.canvas.set_window_title('SIRD model fitted to test data')
+            else:
+                fig.canvas.set_window_title('Wikipedia SIRD model')
 
         # First subplot: S.
 
