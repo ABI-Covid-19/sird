@@ -276,7 +276,7 @@ class Model:
         """
 
         days = range(self.__s_values.size)
-        fig, ax = plt.subplots(5 if self.__use_moh_data else 3, 1)
+        fig, ax = plt.subplots(5 if self.__use_moh_data else 3, 1, figsize=(11, 13))
 
         fig.canvas.set_window_title('SIRD model fitted to MoH data' if self.__use_moh_data else 'Default SIRD model')
 
