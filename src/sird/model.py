@@ -182,20 +182,6 @@ class Model:
 
             return
 
-        # Some initial conditions for our Kalman filter.
-
-        if self.__use_moh_data:
-            # State covariance matrix.
-
-            p = np.array([[Model.I_ERROR ** 2, Model.I_ERROR * Model.R_ERROR, Model.I_ERROR * Model.D_ERROR],
-                          [Model.R_ERROR * Model.I_ERROR, Model.R_ERROR ** 2, Model.R_ERROR * Model.D_ERROR],
-                          [Model.D_ERROR * Model.I_ERROR, Model.D_ERROR * Model.R_ERROR, Model.D_ERROR ** 2]])
-
-            # Measurement covariance matrix. Note that we use the same I, R and D errors for both our state and
-            # measurement covariance matrices because... why not?
-
-            r = p
-
         # Run our SIRD simulation.
 
         for i in range(1, nb_of_days + 1):
