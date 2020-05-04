@@ -116,18 +116,16 @@ class Model:
         Reset our SIRD model.
         """
 
-        if self.__use_moh_data:
-            # We use the MoH data at day 0 as our initial guess for S, I, R and D.
+        # Reset I, R and D to the MoH data at day 0 or the values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
 
+        if self.__use_moh_data:
             self.__x_p = np.array([self.__moh_i(0), self.__moh_r(0), self.__moh_d(0)])
             self.__n = Model.NZ_POPULATION
         else:
-            # Use the (initial) values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
-
             self.__x_p = np.array([3, 0, 0])
             self.__n = 1000
 
-        # Use the values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
+        # Reset β, γ and μ to the values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
 
         self.__beta = 0.4
         self.__gamma = 0.035
@@ -204,7 +202,7 @@ class Model:
             # Compute our predicted state, i.e. compute the SIRD model for one day.
 
             for j in range(Model.NB_OF_STEPS):
-                self.__x_p = Model.__f(self.__x_p, Model.DELTA_T, model_self=self)
+                if self.__use_moh_data:
 
             # Update our MoH data (if requested) and simulation values.
 
