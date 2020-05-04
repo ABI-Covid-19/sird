@@ -197,9 +197,15 @@ class Model:
         Return the MoH/test I/R/D value for the given day.
         """
 
-        return Model.__MOH_DATA.iloc[day][index] if self.__use_moh_data \
-            else Model.__TEST_DATA[day][index] if self.__use_test_data \
-            else math.nan
+        if type(day) == int:
+            return Model.__MOH_DATA.iloc[day][index] if self.__use_moh_data \
+                else Model.__TEST_DATA[day][index] if self.__use_test_data \
+                else math.nan
+        else:
+            floor_day = math.floor(day)
+            floor_day_data_x = self.__data_x(floor_day, index)
+
+            return floor_day_data_x + (day - floor_day) * (self.__data_x(math.ceil(day), index) - floor_day_data_x)
 
     def __data_i(self, day):
         """
