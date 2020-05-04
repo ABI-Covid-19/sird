@@ -197,7 +197,7 @@ class Model:
         Return the MoH/test I/R/D value for the given day.
         """
 
-        if type(day) == int:
+        if type(day) is int:
             return Model.__MOH_DATA.iloc[day][index] if self.__use_moh_data \
                 else Model.__TEST_DATA[day][index] if self.__use_test_data \
                 else math.nan
