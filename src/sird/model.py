@@ -279,13 +279,11 @@ class Model:
             self.__ukf = UnscentedKalmanFilter(Model.__N_FILTERED, Model.__N_MEASURED, Model.__DELTA_T, self.__h,
                                                Model.__f, points)
 
-            self.__ukf.x = np.array(
-                [self.__i(0), self.__r(0), self.__d(0), self.__beta, self.__gamma, self.__mu])
+            self.__ukf.x = np.array([self.__i(0), self.__r(0), self.__d(0), self.__beta, self.__gamma, self.__mu])
             self.__ukf.P = np.array(
                 [[Model.__I_ERROR ** 2, Model.__I_ERROR * Model.__R_ERROR, Model.__I_ERROR * Model.__D_ERROR],
                  [Model.__R_ERROR * Model.__I_ERROR, Model.__R_ERROR ** 2, Model.__R_ERROR * Model.__D_ERROR],
-                 [Model.__D_ERROR * Model.__I_ERROR, Model.__D_ERROR * Model.__R_ERROR,
-                  Model.__D_ERROR ** 2]])
+                 [Model.__D_ERROR * Model.__I_ERROR, Model.__D_ERROR * Model.__R_ERROR, Model.__D_ERROR ** 2]])
 
             self.__x_p = np.array([self.__i(0), self.__r(0), self.__d(0)])
             self.__n = Model.__NZ_POPULATION
@@ -322,9 +320,7 @@ class Model:
         """
 
         model_self = kwargs.get('model_self')
-        a = np.array([[1 + dt * (
-                    model_self.__beta * model_self.__s_value() / model_self.__n - model_self.__gamma - model_self.__mu),
-                       0, 0],
+        a = np.array([[1 + dt * (model_self.__beta * model_self.__s_value() / model_self.__n - model_self.__gamma - model_self.__mu), 0, 0],
                       [dt * model_self.__gamma, 1, 0],
                       [dt * model_self.__mu, 0, 1]])
 
