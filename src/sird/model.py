@@ -147,9 +147,7 @@ class Model:
         # Retrieve the MoH data (if requested).
 
         if use == Model.Use.MOH_DATA and Model.__MOH_DATA is None:
-            Model.__MOH_DATA = pd.read_csv(
-                'https://docs.google.com/spreadsheets/u/1/d/16UMnHbnBHju-fK45aSdaJhVmrXJpy71oxSiN_AvqV84/export?format=csv&id=16UMnHbnBHju-fK45aSdaJhVmrXJpy71oxSiN_AvqV84&gid=0',
-                usecols=[7, 9, 11])
+            Model.__MOH_DATA = pd.read_csv('https://bit.ly/3d5eCIq', usecols=[7, 9, 11])
 
         # Keep track of whether to use the MoH/test data.
 
