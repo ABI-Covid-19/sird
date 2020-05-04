@@ -185,39 +185,42 @@ class Model:
 
         self.reset()
 
-    def __s(self, day):
+    def __data_s(self, day):
         """
         Return the MoH/test S value for the given day.
         """
 
-        return Model.__NZ_POPULATION - self.__i(day) - self.__r(day) - self.__d(day)
+        return Model.__NZ_POPULATION - self.__data_i(day) - self.__data_r(day) - self.__data_d(day)
 
-    def __i(self, day):
+    def __data_x(self, day, index):
+        """
+        Return the MoH/test I/R/D value for the given day.
+        """
+
+        return Model.__MOH_DATA.iloc[day][index] if self.__use_moh_data \
+            else Model.__TEST_DATA[day][index] if self.__use_test_data \
+            else math.nan
+
+    def __data_i(self, day):
         """
         Return the MoH/test I value for the given day.
         """
 
-        return Model.__MOH_DATA.iloc[day][2] if self.__use_moh_data \
-            else Model.__TEST_DATA[day][0] if self.__use_test_data \
-            else math.nan
+        return self.__data_x(day, 2 if self.__use_moh_data else 0)
 
-    def __r(self, day):
+    def __data_r(self, day):
         """
         Return the MoH/test R value for the given day.
         """
 
-        return Model.__MOH_DATA.iloc[day][0] if self.__use_moh_data \
-            else Model.__TEST_DATA[day][1] if self.__use_test_data \
-            else math.nan
+        return self.__data_x(day, 0 if self.__use_moh_data else 1)
 
-    def __d(self, day):
+    def __data_d(self, day):
         """
         Return the MoH/test D value for the given day.
         """
 
-        return Model.__MOH_DATA.iloc[day][1] if self.__use_moh_data \
-            else Model.__TEST_DATA[day][2] if self.__use_test_data \
-            else math.nan
+        return self.__data_x(day, 1 if self.__use_moh_data else 2)
 
     def __data_available(self, day):
         """
@@ -279,13 +282,14 @@ class Model:
             self.__ukf = UnscentedKalmanFilter(Model.__N_FILTERED, Model.__N_MEASURED, Model.__DELTA_T, self.__h,
                                                Model.__f, points)
 
-            self.__ukf.x = np.array([self.__i(0), self.__r(0), self.__d(0), self.__beta, self.__gamma, self.__mu])
+            self.__ukf.x = np.array(
+                [self.__data_i(0), self.__data_r(0), self.__data_d(0), self.__beta, self.__gamma, self.__mu])
             self.__ukf.P = np.array(
                 [[Model.__I_ERROR ** 2, Model.__I_ERROR * Model.__R_ERROR, Model.__I_ERROR * Model.__D_ERROR],
                  [Model.__R_ERROR * Model.__I_ERROR, Model.__R_ERROR ** 2, Model.__R_ERROR * Model.__D_ERROR],
                  [Model.__D_ERROR * Model.__I_ERROR, Model.__D_ERROR * Model.__R_ERROR, Model.__D_ERROR ** 2]])
 
-            self.__x_p = np.array([self.__i(0), self.__r(0), self.__d(0)])
+            self.__x_p = np.array([self.__data_i(0), self.__data_r(0), self.__data_d(0)])
             self.__n = Model.__NZ_POPULATION
         else:
             self.__x_p = np.array([3, 0, 0])
@@ -294,10 +298,10 @@ class Model:
         # Reset our MoH data and simulation values.
 
         if self.__use_data:
-            self.__data_s_values = np.array([self.__s(0)])
-            self.__data_i_values = np.array([self.__i(0)])
-            self.__data_r_values = np.array([self.__r(0)])
-            self.__data_d_values = np.array([self.__d(0)])
+            self.__data_s_values = np.array([self.__data_s(0)])
+            self.__data_i_values = np.array([self.__data_i(0)])
+            self.__data_r_values = np.array([self.__data_r(0)])
+            self.__data_d_values = np.array([self.__data_d(0)])
 
         self.__s_values = np.array([self.__s_value()])
         self.__i_values = np.array([self.__i_value()])
@@ -320,7 +324,9 @@ class Model:
         """
 
         model_self = kwargs.get('model_self')
-        a = np.array([[1 + dt * (model_self.__beta * model_self.__s_value() / model_self.__n - model_self.__gamma - model_self.__mu), 0, 0],
+        a = np.array([[1 + dt * (
+                model_self.__beta * model_self.__s_value() / model_self.__n - model_self.__gamma - model_self.__mu),
+                       0, 0],
                       [dt * model_self.__gamma, 1, 0],
                       [dt * model_self.__mu, 0, 1]])
 
@@ -363,10 +369,10 @@ class Model:
 
             if self.__use_data:
                 if self.__data_available(i):
-                    self.__data_s_values = np.append(self.__data_s_values, self.__s(i))
-                    self.__data_i_values = np.append(self.__data_i_values, self.__i(i))
-                    self.__data_r_values = np.append(self.__data_r_values, self.__r(i))
-                    self.__data_d_values = np.append(self.__data_d_values, self.__d(i))
+                    self.__data_s_values = np.append(self.__data_s_values, self.__data_s(i))
+                    self.__data_i_values = np.append(self.__data_i_values, self.__data_i(i))
+                    self.__data_r_values = np.append(self.__data_r_values, self.__data_r(i))
+                    self.__data_d_values = np.append(self.__data_d_values, self.__data_d(i))
                 else:
                     self.__data_s_values = np.append(self.__data_s_values, math.nan)
                     self.__data_i_values = np.append(self.__data_i_values, math.nan)
