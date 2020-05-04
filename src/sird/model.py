@@ -218,7 +218,7 @@ class Model:
 
             if self.__moh_data_available(i):
                 # Compute our predicted state covariance matrix using
-                #   Pp(t) = A·P(t-1)·transpose(A) + Q(t)
+                #   Pp(t) = A·P(t-1)·A.T + Q(t)
                 # where A is the matrix used to compute the SIRD model. Q(t) is the process noise covariance matrix,
                 # which we don't account for here. Otherwise, note that dt is equal to 1 day when we apply our Kalman
                 # filter, so we can ignore it in our calculation of our A matrix.
@@ -227,12 +227,12 @@ class Model:
                     [[1 + self.__beta * self.__s_value() / self.__n - self.__gamma - self.__mu, 0, 0],
                      [self.__gamma, 1, 0],
                      [self.__mu, 0, 1]])
-                p_p = a.dot(p).dot(a.transpose())
+                p_p = a.dot(p).dot(a.T)
 
                 # Compute our Kalman gain using
-                #          Pp(t)·transpose(H)
-                #   K = -----------------------
-                #       H·Pp(t)·tranpose(H) + R
+                #          Pp(t)·H.T
+                #   K = ---------------
+                #       H·Pp(t)·H.T + R
                 # where H is a matrix that ensures that K ends up in the correct shape. Here, H is the identity matrix,
                 # so we can ignore it in our calculation of K. Otherwise, R is the measurement covariance matrix.
 
