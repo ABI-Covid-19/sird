@@ -378,4 +378,4 @@ if __name__ == '__main__':
     # Run the model and plot its S, I, R and D values, together with the MoH data.
 
     m.run()
-    m.plot(True)
+    m.plot()
