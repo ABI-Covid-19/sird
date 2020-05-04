@@ -369,7 +369,7 @@ class Model:
 
                 if self.__use_data:
                     self.__ukf.predict(model_self=self)
-                    self.__ukf.update(self.__x_p)
+                    self.__ukf.update(np.array([self.__data_i(k), self.__data_r(k), self.__data_d(k)]))
                 else:
                     self.__x_p = Model.__f(self.__x_p, Model.__DELTA_T, model_self=self)
 
