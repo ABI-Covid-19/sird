@@ -11,22 +11,21 @@ class Model:
     Note that N = S+I+R+D and that we have data from the MoH for I, R and D. So, there is no need to compute S as such.
     """
 
-    NZ_POPULATION = 5000000
-    I_ERROR = 2  # The MoH has, on occasion, reported up to 2 people having been wrongly categorised as infected.
-    R_ERROR = 0  # People either recover or they don't, so no error possible.
-    D_ERROR = 0  # People either die or they don't, so no error possible.
-    NB_OF_STEPS = 100
-    DELTA_T = 1 / NB_OF_STEPS
-    S_COLOR = '#0071bd'
-    I_COLOR = '#d9521a'
-    R_COLOR = '#edb020'
-    D_COLOR = '#7e2f8e'
-    BETA_COLOR = '#7e2f8e'
-    GAMMA_COLOR = '#4dbeee'
-    MU_COLOR = '#a2142f'
-    MOH_ALPHA = 0.3
-
-    __moh_data = None
+    __NZ_POPULATION = 5000000
+    __I_ERROR = 2  # The MoH has, on occasion, reported up to 2 people having been wrongly categorised as infected.
+    __R_ERROR = 0  # People either recover or they don't, so no error possible.
+    __D_ERROR = 0  # People either die or they don't, so no error possible.
+    __NB_OF_STEPS = 100
+    __DELTA_T = 1 / __NB_OF_STEPS
+    __S_COLOR = '#0071bd'
+    __I_COLOR = '#d9521a'
+    __R_COLOR = '#edb020'
+    __D_COLOR = '#7e2f8e'
+    __BETA_COLOR = '#7e2f8e'
+    __GAMMA_COLOR = '#4dbeee'
+    __MU_COLOR = '#a2142f'
+    __DATA_ALPHA = 0.3
+    __MOH_DATA = None
 
     def __init__(self, use_moh_data=True):
         """
@@ -35,8 +34,8 @@ class Model:
 
         # Retrieve the MoH data (if requested).
 
-        if use_moh_data and Model.__moh_data is None:
-            Model.__moh_data = pd.read_csv(
+        if use_moh_data and Model.__MOH_DATA is None:
+            Model.__MOH_DATA = pd.read_csv(
                 'https://docs.google.com/spreadsheets/u/1/d/16UMnHbnBHju-fK45aSdaJhVmrXJpy71oxSiN_AvqV84/export?format=csv&id=16UMnHbnBHju-fK45aSdaJhVmrXJpy71oxSiN_AvqV84&gid=0',
                 usecols=[7, 9, 11])
 
@@ -53,35 +52,35 @@ class Model:
         Return the MoH S value for the given day.
         """
 
-        return Model.NZ_POPULATION - self.__moh_i(day) - self.__moh_r(day) - self.__moh_d(day)
+        return Model.__NZ_POPULATION - self.__moh_i(day) - self.__moh_r(day) - self.__moh_d(day)
 
     def __moh_i(self, day):
         """
         Return the MoH I value for the given day.
         """
 
-        return Model.__moh_data.iloc[day][2]
+        return Model.__MOH_DATA.iloc[day][2]
 
     def __moh_r(self, day):
         """
         Return the MoH R value for the given day.
         """
 
-        return Model.__moh_data.iloc[day][0]
+        return Model.__MOH_DATA.iloc[day][0]
 
     def __moh_d(self, day):
         """
         Return the MoH D value for the given day.
         """
 
-        return Model.__moh_data.iloc[day][1]
+        return Model.__MOH_DATA.iloc[day][1]
 
     def __moh_data_available(self, day):
         """
         Return whether some MoH data is available for the given day.
         """
 
-        return day < Model.__moh_data.shape[0] if self.__use_moh_data else False
+        return day < Model.__MOH_DATA.shape[0] if self.__use_moh_data else False
 
     def __s_value(self):
         """
@@ -120,7 +119,7 @@ class Model:
 
         if self.__use_moh_data:
             self.__x_p = np.array([self.__moh_i(0), self.__moh_r(0), self.__moh_d(0)])
-            self.__n = Model.NZ_POPULATION
+            self.__n = Model.__NZ_POPULATION
         else:
             self.__x_p = np.array([3, 0, 0])
             self.__n = 1000
@@ -187,8 +186,9 @@ class Model:
         for i in range(1, nb_of_days + 1):
             # Compute our predicted state, i.e. compute the SIRD model for one day.
 
-            for j in range(Model.NB_OF_STEPS):
+            for j in range(Model.__NB_OF_STEPS):
                 if self.__use_moh_data:
+                    self.__x_p = Model.__f(self.__x_p, Model.__DELTA_T, model_self=self)
 
             # Update our MoH data (if requested) and simulation values.
 
@@ -227,47 +227,47 @@ class Model:
         # First subplot: S.
 
         ax1 = ax[0]
-        ax1.plot(days, self.__s_values, Model.S_COLOR, label='S')
+        ax1.plot(days, self.__s_values, Model.__S_COLOR, label='S')
         ax1.legend(loc='best')
         if self.__use_moh_data:
             ax2 = ax1.twinx() if two_axes else ax1
-            ax2.bar(days, self.__moh_s_values - min(self.__moh_s_values), color=Model.S_COLOR, alpha=Model.MOH_ALPHA,
+            ax2.bar(days, self.__moh_s_values - min(self.__moh_s_values), color=Model.__S_COLOR, alpha=Model.__DATA_ALPHA,
                     label='MoH S')
-            ax2.set_yticklabels(np.linspace(min(self.__moh_s_values), Model.NZ_POPULATION))
+            ax2.set_yticklabels(np.linspace(min(self.__moh_s_values), Model.__NZ_POPULATION))
 
         # Second subplot: I and R.
 
         ax1 = ax[1]
-        ax1.plot(days, self.__i_values, Model.I_COLOR, label='I')
-        ax1.plot(days, self.__r_values, Model.R_COLOR, label='R')
+        ax1.plot(days, self.__i_values, Model.__I_COLOR, label='I')
+        ax1.plot(days, self.__r_values, Model.__R_COLOR, label='R')
         ax1.legend(loc='best')
         if self.__use_moh_data:
             ax2 = ax1.twinx() if two_axes else ax1
-            ax2.bar(days, self.__moh_i_values, color=Model.I_COLOR, alpha=Model.MOH_ALPHA, label='MoH I')
-            ax2.bar(days, self.__moh_r_values, color=Model.R_COLOR, alpha=Model.MOH_ALPHA, label='MoH R')
+            ax2.bar(days, self.__moh_i_values, color=Model.__I_COLOR, alpha=Model.__DATA_ALPHA, label='MoH I')
+            ax2.bar(days, self.__moh_r_values, color=Model.__R_COLOR, alpha=Model.__DATA_ALPHA, label='MoH R')
 
         # Third subplot: D.
 
         ax1 = ax[2]
-        ax1.plot(days, self.__d_values, Model.D_COLOR, label='D')
+        ax1.plot(days, self.__d_values, Model.__D_COLOR, label='D')
         ax1.legend(loc='best')
         if self.__use_moh_data:
             ax2 = ax1.twinx() if two_axes else ax1
-            ax2.bar(days, self.__moh_d_values, color=Model.D_COLOR, alpha=Model.MOH_ALPHA, label='MoH D')
+            ax2.bar(days, self.__moh_d_values, color=Model.__D_COLOR, alpha=Model.__DATA_ALPHA, label='MoH D')
 
         # Fourth subplot: β.
 
         if self.__use_moh_data:
             ax1 = ax[3]
-            ax1.plot(days, self.__beta_values, Model.BETA_COLOR, label='β')
+            ax1.plot(days, self.__beta_values, Model.__BETA_COLOR, label='β')
             ax1.legend(loc='best')
 
         # Fourth subplot: γ and μ.
 
         if self.__use_moh_data:
             ax1 = ax[4]
-            ax1.plot(days, self.__gamma_values, Model.GAMMA_COLOR, label='γ')
-            ax1.plot(days, self.__mu_values, Model.MU_COLOR, label='μ')
+            ax1.plot(days, self.__gamma_values, Model.__GAMMA_COLOR, label='γ')
+            ax1.plot(days, self.__mu_values, Model.__MU_COLOR, label='μ')
             ax1.legend(loc='best')
 
         plt.xlabel('time (day)')
