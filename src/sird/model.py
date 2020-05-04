@@ -361,10 +361,12 @@ class Model:
 
         # Run our SIRD simulation.
 
-        for i in range(1, nb_of_days + 1):
+        for i in range(nb_of_days):
             # Compute our predicted state, i.e. compute the SIRD model for one day.
 
-            for j in range(Model.__NB_OF_STEPS):
+            for j in range(1, Model.__NB_OF_STEPS + 1):
+                k = i + j * Model.__DELTA_T
+
                 if self.__use_data:
                     self.__ukf.predict(model_self=self)
                     self.__ukf.update(self.__x_p)
@@ -374,11 +376,11 @@ class Model:
             # Update our MoH data (if requested) and simulation values.
 
             if self.__use_data:
-                if self.__data_available(i):
-                    self.__data_s_values = np.append(self.__data_s_values, self.__data_s(i))
-                    self.__data_i_values = np.append(self.__data_i_values, self.__data_i(i))
-                    self.__data_r_values = np.append(self.__data_r_values, self.__data_r(i))
-                    self.__data_d_values = np.append(self.__data_d_values, self.__data_d(i))
+                if self.__data_available(k):
+                    self.__data_s_values = np.append(self.__data_s_values, self.__data_s(k))
+                    self.__data_i_values = np.append(self.__data_i_values, self.__data_i(k))
+                    self.__data_r_values = np.append(self.__data_r_values, self.__data_r(k))
+                    self.__data_d_values = np.append(self.__data_d_values, self.__data_d(k))
                 else:
                     self.__data_s_values = np.append(self.__data_s_values, math.nan)
                     self.__data_i_values = np.append(self.__data_i_values, math.nan)
