@@ -150,6 +150,27 @@ class Model:
         self.__gamma_values = np.array([self.__gamma])
         self.__mu_values = np.array([self.__mu])
 
+    @staticmethod
+    def __f(x, dt, **kwargs):
+        """
+        State function.
+
+        The ODE system to solve is:
+          dI/dt = βIS/N - γI - μI
+          dR/dt = γI
+          dD/dt = μI
+        """
+
+        model_self = kwargs.get('model_self')
+        a = np.array(
+            [[1 + dt * (
+                    model_self.__beta * model_self.__s_value() / model_self.__n - model_self.__gamma - model_self.__mu),
+              0, 0],
+             [dt * model_self.__gamma, 1, 0],
+             [dt * model_self.__mu, 0, 1]])
+
+        return a @ x
+
     def run(self, nb_of_days=100):
         """
         Run our SIRD model for the given number of days, taking advantage of the MoH data (if requested) to estimate the
@@ -180,17 +201,10 @@ class Model:
         # Run our SIRD simulation.
 
         for i in range(1, nb_of_days + 1):
-            # Compute our predicted state, i.e. compute the SIRD model for one day using:
-            #   dI/dt = βIS/N - γI - μI
-            #   dR/dt = γI
-            #   dD/dt = μI
+            # Compute our predicted state, i.e. compute the SIRD model for one day.
 
             for j in range(Model.NB_OF_STEPS):
-                a = np.array(
-                    [[1 + Model.DELTA_T * (self.__beta * self.__s_value() / self.__n - self.__gamma - self.__mu), 0, 0],
-                     [Model.DELTA_T * self.__gamma, 1, 0],
-                     [Model.DELTA_T * self.__mu, 0, 1]])
-                self.__x_p = a.dot(self.__x_p)
+                self.__x_p = Model.__f(self.__x_p, Model.DELTA_T, model_self=self)
 
             # Update our MoH data (if requested) and simulation values.
 
