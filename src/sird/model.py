@@ -4,6 +4,8 @@ from enum import Enum, auto
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from filterpy.kalman import MerweScaledSigmaPoints
+from filterpy.kalman import UnscentedKalmanFilter
 
 
 class Model:
@@ -13,6 +15,8 @@ class Model:
     """
 
     __NZ_POPULATION = 5000000
+    __N_FILTERED = 6  # Number of state variables to filter (I, R, D, β, γ and μ).
+    __N_MEASURED = 3  # Number of measured variables (I, R and D).
     __I_ERROR = 2  # The MoH has, on occasion, reported up to 2 people having been wrongly categorised as infected.
     __R_ERROR = 0  # People either recover or they don't, so no error possible.
     __D_ERROR = 0  # People either die or they don't, so no error possible.
@@ -234,20 +238,38 @@ class Model:
         Reset our SIRD model.
         """
 
-        # Reset I, R and D to the MoH data at day 0 or the values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
-
-        if self.__use_data:
-            self.__x_p = np.array([self.__i(0), self.__r(0), self.__d(0)])
-            self.__n = Model.__NZ_POPULATION
-        else:
-            self.__x_p = np.array([3, 0, 0])
-            self.__n = 1000
-
         # Reset β, γ and μ to the values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
 
         self.__beta = 0.4
         self.__gamma = 0.035
         self.__mu = 0.005
+
+        # Reset I, R and D to the MoH data at day 0 or the values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
+
+        if self.__use_data:
+            points = MerweScaledSigmaPoints(Model.__N_FILTERED,
+                                            1e-3,  # Alpha value (usually a small positive value like 1e-3).
+                                            2,  # Beta value (a value of 2 is optimal for a Gaussian distribution).
+                                            0,  # Kappa value (usually, either 0 or 3-n).
+                                            )
+
+            self.__ukf = UnscentedKalmanFilter(Model.__N_FILTERED, Model.__N_MEASURED, Model.__DELTA_T, self.__h,
+                                               Model.__f,
+                                               points)
+
+            self.__ukf.x = np.array(
+                [self.__i(0), self.__r(0), self.__d(0), self.__beta, self.__gamma, self.__mu])
+            self.__ukf.P = np.array(
+                [[Model.__I_ERROR ** 2, Model.__I_ERROR * Model.__R_ERROR, Model.__I_ERROR * Model.__D_ERROR],
+                 [Model.__R_ERROR * Model.__I_ERROR, Model.__R_ERROR ** 2, Model.__R_ERROR * Model.__D_ERROR],
+                 [Model.__D_ERROR * Model.__I_ERROR, Model.__D_ERROR * Model.__R_ERROR,
+                  Model.__D_ERROR ** 2]])
+
+            self.__x_p = np.array([self.__i(0), self.__r(0), self.__d(0)])
+            self.__n = Model.__NZ_POPULATION
+        else:
+            self.__x_p = np.array([3, 0, 0])
+            self.__n = 1000
 
         # Reset our MoH data and simulation values.
 
@@ -287,6 +309,14 @@ class Model:
 
         return a @ x
 
+    @staticmethod
+    def __h(x):
+        """
+        Measurement function.
+        """
+
+        return x[:Model.__N_MEASURED]
+
     def run(self, nb_of_days=100):
         """
         Run our SIRD model for the given number of days, taking advantage of the MoH data (if requested) to estimate the
@@ -306,7 +336,11 @@ class Model:
             # Compute our predicted state, i.e. compute the SIRD model for one day.
 
             for j in range(Model.__NB_OF_STEPS):
-                self.__x_p = Model.__f(self.__x_p, Model.__DELTA_T, model_self=self)
+                if self.__use_data:
+                    self.__ukf.predict(model_self=self)
+                    self.__ukf.update(self.__x_p)
+                else:
+                    self.__x_p = Model.__f(self.__x_p, Model.__DELTA_T, model_self=self)
 
             # Update our MoH data (if requested) and simulation values.
 
