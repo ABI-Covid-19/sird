@@ -533,7 +533,7 @@ class Model:
 if __name__ == '__main__':
     # Create an instance of the SIRD model, asking for the MoH data to be used.
 
-    m = Model(Model.Use.TEST_DATA)
+    m = Model()
 
     # Run the model and plot its S, I, R and D values, together with the MoH data.
 
