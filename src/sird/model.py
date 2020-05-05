@@ -151,6 +151,14 @@ class Model:
         if use == Model.Use.MOH_DATA and Model.__MOH_DATA is None:
             Model.__MOH_DATA = pd.read_csv('https://bit.ly/3d5eCIq', usecols=[7, 9, 11])
 
+        if use == Model.Use.MOH_DATA:
+            self.__data = Model.__MOH_DATA
+        else:
+            if use == Model.Use.TEST_DATA:
+                self.__data = Model.__TEST_DATA
+            else:
+                self.__data = None
+
         # Keep track of whether to use the MoH/test data.
 
         self.__use_moh_data = use == Model.Use.MOH_DATA
@@ -200,8 +208,8 @@ class Model:
         """
 
         if type(day) is int:
-            return Model.__MOH_DATA.iloc[day][index] if self.__use_moh_data \
-                else Model.__TEST_DATA[day][index] if self.__use_test_data \
+            return self.__data.iloc[day][index] if self.__use_moh_data \
+                else self.__data[day][index] if self.__use_test_data \
                 else math.nan
         else:
             floor_day = math.floor(day)
@@ -235,9 +243,7 @@ class Model:
         Return whether some data is available for the given day.
         """
 
-        return day <= Model.__MOH_DATA.shape[0] - 1 if self.__use_moh_data \
-            else day <= Model.__TEST_DATA.shape[0] - 1 if self.__use_test_data \
-            else False
+        return day <= self.__data.shape[0] - 1 if self.__use_data else False
 
     def __s_value(self):
         """
