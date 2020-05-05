@@ -447,6 +447,10 @@ class Model:
             ax2 = ax1.twinx() if two_axes else ax1
             ax2.bar(days, self.__data_s_values, color=Model.__S_COLOR, alpha=Model.__DATA_ALPHA,
                     label='MoH S' if self.__use_moh_data else 'Test S')
+            data_s_range = Model.__NZ_POPULATION - min(self.__data_s_values)
+            data_block = 10 ** (math.floor(math.log10(data_s_range)) - 1)
+            s_values_shift = data_block * math.ceil(data_s_range / data_block)
+            ax2.set_ylim(Model.__NZ_POPULATION - s_values_shift, Model.__NZ_POPULATION)
 
         # Second subplot: I and R.
 
