@@ -159,7 +159,6 @@ class Model:
         self.__use_data = self.__use_moh_data or self.__use_test_data
 
         # Declare some internal variables (that will then be initialised through our call to reset()).
-        # Note: this is to make PEP 8 happy.
 
         self.__beta = None
         self.__gamma = None
