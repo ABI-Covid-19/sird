@@ -25,11 +25,11 @@ class Model:
     __MU_ERROR = 0.001  # We don't determine μ ourselves, so no errors possible (hence a small value).
     __NB_OF_STEPS = 100
     __DELTA_T = 1 / __NB_OF_STEPS
-    __S_COLOR = '#0071bd'
-    __I_COLOR = '#d9521a'
-    __R_COLOR = '#edb020'
+    __S_COLOR = '#0072bd'
+    __I_COLOR = '#d95319'
+    __R_COLOR = '#edb120'
     __D_COLOR = '#7e2f8e'
-    __BETA_COLOR = '#7e2f8e'
+    __BETA_COLOR = '#77ac30'
     __GAMMA_COLOR = '#4dbeee'
     __MU_COLOR = '#a2142f'
     __DATA_ALPHA = 0.3
