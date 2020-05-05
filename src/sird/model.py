@@ -330,13 +330,29 @@ class Model:
         """
 
         model_self = kwargs.get('model_self')
-        a = np.array([[1 + dt * (
-                model_self.__beta * model_self.__s_value() / model_self.__n - model_self.__gamma - model_self.__mu),
-                       0, 0],
-                      [dt * model_self.__gamma, 1, 0],
-                      [dt * model_self.__mu, 0, 1]])
 
-        return a @ x
+        if model_self.__use_data:
+            s = model_self.__n - x[:3].sum()
+            beta = x[3]
+            gamma = x[4]
+            mu = x[5]
+        else:
+            s = model_self.__n - x.sum()
+            beta = model_self.__beta
+            gamma = model_self.__gamma
+            mu = model_self.__mu
+
+        a = np.array([[1 + dt * (beta * s / model_self.__n - gamma - mu), 0, 0, 0, 0, 0],
+                      [dt * gamma, 1, 0, 0, 0, 0],
+                      [dt * mu, 0, 1, 0, 0, 0],
+                      [0, 0, 0, 1, 0, 0],
+                      [0, 0, 0, 0, 1, 0],
+                      [0, 0, 0, 0, 0, 1]])
+
+        if model_self.__use_data:
+            return a @ x
+        else:
+            return a[:3, :3] @ x
 
     @staticmethod
     def __h(x):
