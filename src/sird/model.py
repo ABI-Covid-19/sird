@@ -442,9 +442,8 @@ class Model:
         ax1.legend(loc='best')
         if self.__use_data:
             ax2 = ax1.twinx() if two_axes else ax1
-            ax2.bar(days, self.__data_s_values - min(self.__data_s_values), color=Model.__S_COLOR,
-                    alpha=Model.__DATA_ALPHA, label='MoH S' if self.__use_moh_data else 'Test S')
-            ax2.set_yticklabels(np.linspace(min(self.__data_s_values), Model.__NZ_POPULATION))
+            ax2.bar(days, self.__data_s_values, color=Model.__S_COLOR, alpha=Model.__DATA_ALPHA,
+                    label='MoH S' if self.__use_moh_data else 'Test S')
 
         # Second subplot: I and R.
 
