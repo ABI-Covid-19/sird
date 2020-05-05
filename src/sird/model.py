@@ -429,7 +429,7 @@ class Model:
             self.__gamma_values = np.append(self.__gamma_values, self.__gamma)
             self.__mu_values = np.append(self.__mu_values, self.__mu)
 
-    def plot(self, two_axes=False):
+    def plot(self, filename=None, two_axes=False):
         """
         Plot the results using five subplots for 1) S, 2) I and R, 3) D, 4) β, and 5) γ and μ. In each subplot, we plot
         the MoH data (if requested) as bars and the computed value as a line.
@@ -499,7 +499,11 @@ class Model:
             ax1.legend(loc='best')
 
         plt.xlabel('time (day)')
-        plt.show()
+
+        if filename is None:
+            plt.show()
+        else:
+            plt.savefig(filename)
 
     def s(self, day=-1):
         """
