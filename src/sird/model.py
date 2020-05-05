@@ -378,6 +378,8 @@ class Model:
 
         # Run our SIRD simulation.
 
+        k = None
+
         for i in range(nb_of_days):
             # Compute our predicted state, i.e. compute the SIRD model for one day.
 
