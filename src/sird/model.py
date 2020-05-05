@@ -159,7 +159,7 @@ class Model:
             else:
                 self.__data = None
 
-        if not self.__data is None and max_data != -1:
+        if self.__data is not None and max_data != -1:
             self.__data = self.__data[:max_data]
 
         # Keep track of whether to use the MoH/test data.
