@@ -505,6 +505,8 @@ class Model:
         else:
             plt.savefig(filename)
 
+        plt.close(fig)
+
     def s(self, day=-1):
         """
         Return all the S values (if day=-1) or its value for a given day.
@@ -544,6 +546,27 @@ class Model:
             return self.__d_values
         else:
             return self.__d_values[day]
+
+    def movie(self, base_filename):
+        if self.__use_data:
+            if self.__use_moh_data:
+                data_size = Model.__MOH_DATA.shape[0]
+            else:
+                data_size = Model.__TEST_DATA.shape[0]
+
+            nb_of_digits = math.floor(math.log10(data_size) + 1)
+
+            for i in range(1, data_size + 1):
+                if self.__use_moh_data:
+                    self.__data = Model.__MOH_DATA
+                else:
+                    self.__data = Model.__TEST_DATA
+
+                self.__data = self.__data[:i]
+
+                self.reset()
+                self.run()
+                self.plot(filename=base_filename + '0' * (nb_of_digits - math.floor(math.log10(i) + 1)) + str(i))
 
 
 if __name__ == '__main__':
