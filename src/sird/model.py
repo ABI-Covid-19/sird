@@ -236,8 +236,8 @@ class Model:
         Return whether some data is available for the given day.
         """
 
-        return day < Model.__MOH_DATA.shape[0] if self.__use_moh_data \
-            else day < Model.__TEST_DATA.shape[0] if self.__use_test_data \
+        return day <= Model.__MOH_DATA.shape[0] - 1 if self.__use_moh_data \
+            else day <= Model.__TEST_DATA.shape[0] - 1 if self.__use_test_data \
             else False
 
     def __s_value(self):
@@ -331,8 +331,9 @@ class Model:
         """
 
         model_self = kwargs.get('model_self')
+        with_ukf = kwargs.get('with_ukf', True)
 
-        if model_self.__use_data:
+        if with_ukf:
             s = model_self.__n - x[:3].sum()
             beta = x[3]
             gamma = x[4]
@@ -350,7 +351,7 @@ class Model:
                       [0, 0, 0, 0, 1, 0],
                       [0, 0, 0, 0, 0, 1]])
 
-        if model_self.__use_data:
+        if with_ukf:
             return a @ x
         else:
             return a[:3, :3] @ x
@@ -386,7 +387,7 @@ class Model:
             for j in range(1, Model.__NB_OF_STEPS + 1):
                 k = i + j * Model.__DELTA_T
 
-                if self.__use_data:
+                if self.__use_data and self.__data_available(k):
                     self.__ukf.predict(model_self=self)
                     self.__ukf.update(np.array([self.__data_i(k), self.__data_r(k), self.__data_d(k)]))
 
@@ -395,7 +396,7 @@ class Model:
                     self.__gamma = self.__ukf.x[4]
                     self.__mu = self.__ukf.x[5]
                 else:
-                    self.__x_p = Model.__f(self.__x_p, Model.__DELTA_T, model_self=self)
+                    self.__x_p = Model.__f(self.__x_p, Model.__DELTA_T, model_self=self, with_ukf=False)
 
             # Update our MoH data (if requested) and simulation values.
 
