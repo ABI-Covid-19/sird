@@ -141,7 +141,7 @@ class Model:
         MOH_DATA = auto()
         TEST_DATA = auto()
 
-    def __init__(self, use=Use.MOH_DATA):
+    def __init__(self, use=Use.MOH_DATA, max_data=-1):
         """
         Initialise our Model object.
         """
@@ -158,6 +158,9 @@ class Model:
                 self.__data = Model.__TEST_DATA
             else:
                 self.__data = None
+
+        if not self.__data is None and max_data != -1:
+            self.__data = self.__data[:max_data]
 
         # Keep track of whether to use the MoH/test data.
 
