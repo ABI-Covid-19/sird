@@ -38,7 +38,7 @@ class Model:
         WIKIPEDIA = auto()
         MOH_DATA = auto()
 
-    def __init__(self, use=Use.MOH_DATA, max_data=-1):
+    def __init__(self, use=Use.MOH_DATA, max_moh_data=-1):
         """
         Initialise our Model object.
         """
@@ -66,8 +66,8 @@ class Model:
         else:
             self.__moh_data = None
 
-        if self.__moh_data is not None and max_data != -1:
-            self.__moh_data = self.__moh_data[:max_data]
+        if self.__moh_data is not None and max_moh_data != -1:
+            self.__moh_data = self.__moh_data[:max_moh_data]
 
         # Keep track of whether to use the MoH data.
 
