@@ -1,6 +1,8 @@
 import math
 from enum import Enum, auto
 
+import matplotlib
+import matplotlib.animation as manimation
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -25,6 +27,7 @@ class Model:
     __MU_ERROR = 0.001  # We don't determine μ ourselves, so no errors possible (hence a small value).
     __NB_OF_STEPS = 100
     __DELTA_T = 1 / __NB_OF_STEPS
+    __FIG_SIZE = (11, 13)
     __S_COLOR = '#0072bd'
     __I_COLOR = '#d95319'
     __R_COLOR = '#edb120'
@@ -429,14 +432,24 @@ class Model:
             self.__gamma_values = np.append(self.__gamma_values, self.__gamma)
             self.__mu_values = np.append(self.__mu_values, self.__mu)
 
-    def plot(self, filename=None, two_axes=False):
+    def plot(self, fig=None, two_axes=False):
         """
         Plot the results using five subplots for 1) S, 2) I and R, 3) D, 4) β, and 5) γ and μ. In each subplot, we plot
         the MoH data (if requested) as bars and the computed value as a line.
         """
 
         days = range(self.__s_values.size)
-        fig, ax = plt.subplots(5 if self.__use_data else 3, 1, figsize=(11, 13))
+        nrows = 5 if self.__use_data else 3
+        ncols = 1
+
+        if fig is None:
+            show_fig = True
+            fig, ax = plt.subplots(nrows, ncols, figsize=Model.__FIG_SIZE)
+        else:
+            fig.clf()
+
+            show_fig = False
+            ax = fig.subplots(nrows, ncols)
 
         if self.__use_moh_data:
             fig.canvas.set_window_title('SIRD model fitted to MoH data')
@@ -500,12 +513,8 @@ class Model:
 
         plt.xlabel('time (day)')
 
-        if filename is None:
+        if show_fig:
             plt.show()
-        else:
-            plt.savefig(filename)
-
-        plt.close(fig)
 
     def s(self, day=-1):
         """
@@ -547,26 +556,39 @@ class Model:
         else:
             return self.__d_values[day]
 
-    def movie(self, base_filename):
+    def movie(self, filename):
         if self.__use_data:
             if self.__use_moh_data:
                 data_size = Model.__MOH_DATA.shape[0]
             else:
                 data_size = Model.__TEST_DATA.shape[0]
 
-            nb_of_digits = math.floor(math.log10(data_size) + 1)
+            fig = plt.figure(figsize=Model.__FIG_SIZE)
+            backend = matplotlib.get_backend()
+            writer = manimation.writers['ffmpeg'](15)
 
-            for i in range(1, data_size + 1):
-                if self.__use_moh_data:
-                    self.__data = Model.__MOH_DATA
-                else:
-                    self.__data = Model.__TEST_DATA
+            matplotlib.use("Agg")
 
-                self.__data = self.__data[:i]
+            with writer.saving(fig, filename, 96):
+                for i in range(1, data_size + 1):
+                    print('Processing frame #', i, '/', data_size, '...', sep='')
 
-                self.reset()
-                self.run()
-                self.plot(filename=base_filename + '0' * (nb_of_digits - math.floor(math.log10(i) + 1)) + str(i))
+                    if self.__use_moh_data:
+                        self.__data = Model.__MOH_DATA
+                    else:
+                        self.__data = Model.__TEST_DATA
+
+                    self.__data = self.__data[:i]
+
+                    self.reset()
+                    self.run()
+                    self.plot(fig=fig)
+
+                    writer.grab_frame()
+
+                print('All done!')
+
+            matplotlib.use(backend)
 
 
 if __name__ == '__main__':
