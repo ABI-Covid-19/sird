@@ -55,10 +55,7 @@ Use
 For the first run, you should get something like:
 
 .. image:: res/figure.png
-   :scale: 50 %
-   :align: center
 
 As for the movie, you should get something like:
 
 .. image:: res/movie.gif
-   :align: center
