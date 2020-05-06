@@ -7,6 +7,7 @@ setup(
     author_email='a.garny@auckland.ac.nz',
     description='A Python package to model Covid-19 using the SIRD model',
     install_requires=[
+        'filterpy',
         'matplotlib',
         'numpy',
         'pandas',

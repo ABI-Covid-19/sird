@@ -37,6 +37,9 @@ Use
  m.run(150)
  m.plot()
 
+ # Generate a movie showing the evolution of the SIRD model throughout time.
+ m.movie('movie.mp4')
+
  # Output all the values for S, I, R and D.
  print(m.s())
  print(m.i())
@@ -52,3 +55,7 @@ Use
 For the first run, you should get something like:
 
 .. image:: res/figure.png
+
+As for the movie, you should get something like:
+
+.. image:: res/movie.gif
