@@ -13,7 +13,6 @@ from filterpy.kalman import UnscentedKalmanFilter
 class Model:
     """
     SIRD model of Covid-19.
-    Note that N = S+I+R+D and that we have data from the MoH for I, R and D. So, there is no need to compute S as such.
     """
 
     __NZ_POPULATION = 5000000
@@ -38,7 +37,7 @@ class Model:
     __BETA_COLOR = '#77ac30'
     __GAMMA_COLOR = '#4dbeee'
     __MU_COLOR = '#a2142f'
-    __DATA_ALPHA = 0.3
+    __MOH_DATA_ALPHA = 0.3
     __MOH_DATA = None
     __TEST_DATA = np.array([[1, 0, 0],
                             [1.5667447357441555, 0.06921980348886003, 0.01847169179266075],
@@ -152,7 +151,7 @@ class Model:
         Initialise our Model object.
         """
 
-        # Retrieve the MoH data (if requested).
+        # Retrieve the MoH data (if requested and needed).
 
         if use == Model.Use.MOH_DATA and Model.__MOH_DATA is None:
             confirmed_data = self.__jhu_data(Model.__CONFIRMED_URL)
@@ -504,9 +503,9 @@ class Model:
         ax1.legend(loc='best')
         if self.__use_data:
             ax2 = ax1.twinx() if two_axes else ax1
-            ax2.bar(days, self.__data_i_values, color=Model.__I_COLOR, alpha=Model.__DATA_ALPHA,
+            ax2.bar(days, self.__data_i_values, color=Model.__I_COLOR, alpha=Model.__MOH_DATA_ALPHA,
                     label='MoH I' if self.__use_moh_data else 'Test I')
-            ax2.bar(days, self.__data_r_values, color=Model.__R_COLOR, alpha=Model.__DATA_ALPHA,
+            ax2.bar(days, self.__data_r_values, color=Model.__R_COLOR, alpha=Model.__MOH_DATA_ALPHA,
                     label='MoH R' if self.__use_moh_data else 'Test R')
 
         # Third subplot: D.
@@ -516,7 +515,7 @@ class Model:
         ax1.legend(loc='best')
         if self.__use_data:
             ax2 = ax1.twinx() if two_axes else ax1
-            ax2.bar(days, self.__data_d_values, color=Model.__D_COLOR, alpha=Model.__DATA_ALPHA,
+            ax2.bar(days, self.__data_d_values, color=Model.__D_COLOR, alpha=Model.__MOH_DATA_ALPHA,
                     label='MoH D' if self.__use_moh_data else 'Test D')
 
         # Fourth subplot: β.
