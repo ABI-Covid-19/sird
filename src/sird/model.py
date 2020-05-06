@@ -147,24 +147,24 @@ class Model:
         MOH_DATA = auto()
         TEST_DATA = auto()
 
+    def __jhu_data(self, url):
+        data = pd.read_csv(url)
+        data = data[data['Country/Region'] == 'New Zealand']
+        data = data.drop(data.columns[list(range(41))], axis=1)
+
+        return data
+
     def __init__(self, use=Use.MOH_DATA, max_data=-1):
         """
         Initialise our Model object.
         """
 
-        def jhu_data(url):
-            data = pd.read_csv(url)
-            data = data[data['Country/Region'] == 'New Zealand']
-            data = data.drop(data.columns[list(range(41))], axis=1)
-
-            return data
-
         # Retrieve the MoH data (if requested).
 
         if use == Model.Use.MOH_DATA and Model.__MOH_DATA is None:
-            confirmed_data = jhu_data(Model.__CONFIRMED_URL)
-            recovered_data = jhu_data(Model.__RECOVERED_URL)
-            deaths_data = jhu_data(Model.__DEATHS_URL)
+            confirmed_data = self.__jhu_data(Model.__CONFIRMED_URL)
+            recovered_data = self.__jhu_data(Model.__RECOVERED_URL)
+            deaths_data = self.__jhu_data(Model.__DEATHS_URL)
 
             for i in range(confirmed_data.shape[1]):
                 c = confirmed_data.iloc[0][i]
