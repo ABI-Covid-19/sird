@@ -334,7 +334,7 @@ class Model:
             self.__x = np.array([3, 0, 0])
             self.__n = 1000
 
-        # Reset our MoH data and simulation values.
+        # Reset our MoH data (if requested).
 
         if self.__use_data:
             self.__data_s_values = np.array([self.__data_s(0)])
@@ -342,10 +342,14 @@ class Model:
             self.__data_r_values = np.array([self.__data_r(0)])
             self.__data_d_values = np.array([self.__data_d(0)])
 
+        # Reset our predicted/estimated values.
+
         self.__s_values = np.array([self.__s_value()])
         self.__i_values = np.array([self.__i_value()])
         self.__r_values = np.array([self.__r_value()])
         self.__d_values = np.array([self.__d_value()])
+
+        # Reset our estimated SIRD model parameters.
 
         self.__beta_values = np.array([self.__beta])
         self.__gamma_values = np.array([self.__gamma])
@@ -430,7 +434,7 @@ class Model:
                 else:
                     self.__x = Model.__f(self.__x, Model.__DELTA_T, model_self=self, with_ukf=False)
 
-            # Update our MoH data (if requested) and simulation values.
+            # Keep track of our MoH data (if requested).
 
             if self.__use_data:
                 if self.__data_available(k):
@@ -444,10 +448,14 @@ class Model:
                     self.__data_r_values = np.append(self.__data_r_values, math.nan)
                     self.__data_d_values = np.append(self.__data_d_values, math.nan)
 
+            # Keep track of our predicted/estimated values.
+
             self.__s_values = np.append(self.__s_values, self.__s_value())
             self.__i_values = np.append(self.__i_values, self.__i_value())
             self.__r_values = np.append(self.__r_values, self.__r_value())
             self.__d_values = np.append(self.__d_values, self.__d_value())
+
+            # Keep track of our estimated SIRD model parameters.
 
             self.__beta_values = np.append(self.__beta_values, self.__beta)
             self.__gamma_values = np.append(self.__gamma_values, self.__gamma)
