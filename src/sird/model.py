@@ -420,7 +420,7 @@ class Model:
             data_size = Model.__MOH_DATA.shape[0]
             fig = plt.figure(figsize=Model.__FIG_SIZE)
             backend = matplotlib.get_backend()
-            writer = manimation.writers['ffmpeg'](15)
+            writer = manimation.writers['ffmpeg']()
 
             matplotlib.use("Agg")
 
