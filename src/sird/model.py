@@ -147,13 +147,6 @@ class Model:
         MOH_DATA = auto()
         TEST_DATA = auto()
 
-    def __jhu_data(self, url):
-        data = pd.read_csv(url)
-        data = data[data['Country/Region'] == 'New Zealand']
-        data = data.drop(data.columns[list(range(41))], axis=1)
-
-        return data
-
     def __init__(self, use=Use.MOH_DATA, max_data=-1):
         """
         Initialise our Model object.
@@ -223,6 +216,14 @@ class Model:
         # Initialise (i.e. reset) our SIRD model.
 
         self.reset()
+
+    @staticmethod
+    def __jhu_data(url):
+        data = pd.read_csv(url)
+        data = data[data['Country/Region'] == 'New Zealand']
+        data = data.drop(data.columns[list(range(41))], axis=1)
+
+        return data
 
     def __data_s(self, day):
         """
@@ -294,6 +295,51 @@ class Model:
 
         return self.__x[2]
 
+    @staticmethod
+    def __f(x, dt, **kwargs):
+        """
+        State function.
+
+        The ODE system to solve is:
+          dI/dt = βIS/N - γI - μI
+          dR/dt = γI
+          dD/dt = μI
+        """
+
+        model_self = kwargs.get('model_self')
+        with_ukf = kwargs.get('with_ukf', True)
+
+        if with_ukf:
+            s = model_self.__n - x[:3].sum()
+            beta = x[3]
+            gamma = x[4]
+            mu = x[5]
+        else:
+            s = model_self.__n - x.sum()
+            beta = model_self.__beta
+            gamma = model_self.__gamma
+            mu = model_self.__mu
+
+        a = np.array([[1 + dt * (beta * s / model_self.__n - gamma - mu), 0, 0, 0, 0, 0],
+                      [dt * gamma, 1, 0, 0, 0, 0],
+                      [dt * mu, 0, 1, 0, 0, 0],
+                      [0, 0, 0, 1, 0, 0],
+                      [0, 0, 0, 0, 1, 0],
+                      [0, 0, 0, 0, 0, 1]])
+
+        if with_ukf:
+            return a @ x
+        else:
+            return a[:3, :3] @ x
+
+    @staticmethod
+    def __h(x):
+        """
+        Measurement function.
+        """
+
+        return x[:Model.__N_MEASURED]
+
     def reset(self):
         """
         Reset our SIRD model.
@@ -352,51 +398,6 @@ class Model:
         self.__gamma_values = np.array([self.__gamma])
         self.__mu_values = np.array([self.__mu])
 
-    @staticmethod
-    def __f(x, dt, **kwargs):
-        """
-        State function.
-
-        The ODE system to solve is:
-          dI/dt = βIS/N - γI - μI
-          dR/dt = γI
-          dD/dt = μI
-        """
-
-        model_self = kwargs.get('model_self')
-        with_ukf = kwargs.get('with_ukf', True)
-
-        if with_ukf:
-            s = model_self.__n - x[:3].sum()
-            beta = x[3]
-            gamma = x[4]
-            mu = x[5]
-        else:
-            s = model_self.__n - x.sum()
-            beta = model_self.__beta
-            gamma = model_self.__gamma
-            mu = model_self.__mu
-
-        a = np.array([[1 + dt * (beta * s / model_self.__n - gamma - mu), 0, 0, 0, 0, 0],
-                      [dt * gamma, 1, 0, 0, 0, 0],
-                      [dt * mu, 0, 1, 0, 0, 0],
-                      [0, 0, 0, 1, 0, 0],
-                      [0, 0, 0, 0, 1, 0],
-                      [0, 0, 0, 0, 0, 1]])
-
-        if with_ukf:
-            return a @ x
-        else:
-            return a[:3, :3] @ x
-
-    @staticmethod
-    def __h(x):
-        """
-        Measurement function.
-        """
-
-        return x[:Model.__N_MEASURED]
-
     def run(self, nb_of_days=100):
         """
         Run our SIRD model for the given number of days, taking advantage of the MoH data (if requested) to estimate the
@@ -411,8 +412,6 @@ class Model:
             return
 
         # Run our SIRD simulation.
-
-        k = None
 
         for i in range(1, nb_of_days + 1):
             # Compute our predicted/estimated state by computing our SIRD model / Unscented Kalman filter for one day.
@@ -540,6 +539,40 @@ class Model:
         if show_fig:
             plt.show()
 
+    def movie(self, filename):
+        if self.__use_data:
+            if self.__use_moh_data:
+                data_size = Model.__MOH_DATA.shape[0]
+            else:
+                data_size = Model.__TEST_DATA.shape[0]
+
+            fig = plt.figure(figsize=Model.__FIG_SIZE)
+            backend = matplotlib.get_backend()
+            writer = manimation.writers['ffmpeg'](15)
+
+            matplotlib.use("Agg")
+
+            with writer.saving(fig, filename, 96):
+                for i in range(1, data_size + 1):
+                    print('Processing frame #', i, '/', data_size, '...', sep='')
+
+                    if self.__use_moh_data:
+                        self.__data = Model.__MOH_DATA
+                    else:
+                        self.__data = Model.__TEST_DATA
+
+                    self.__data = self.__data[:i]
+
+                    self.reset()
+                    self.run()
+                    self.plot(fig=fig)
+
+                    writer.grab_frame()
+
+                print('All done!')
+
+            matplotlib.use(backend)
+
     def s(self, day=-1):
         """
         Return all the S values (if day=-1) or its value for a given day.
@@ -579,40 +612,6 @@ class Model:
             return self.__d_values
         else:
             return self.__d_values[day]
-
-    def movie(self, filename):
-        if self.__use_data:
-            if self.__use_moh_data:
-                data_size = Model.__MOH_DATA.shape[0]
-            else:
-                data_size = Model.__TEST_DATA.shape[0]
-
-            fig = plt.figure(figsize=Model.__FIG_SIZE)
-            backend = matplotlib.get_backend()
-            writer = manimation.writers['ffmpeg'](15)
-
-            matplotlib.use("Agg")
-
-            with writer.saving(fig, filename, 96):
-                for i in range(1, data_size + 1):
-                    print('Processing frame #', i, '/', data_size, '...', sep='')
-
-                    if self.__use_moh_data:
-                        self.__data = Model.__MOH_DATA
-                    else:
-                        self.__data = Model.__TEST_DATA
-
-                    self.__data = self.__data[:i]
-
-                    self.reset()
-                    self.run()
-                    self.plot(fig=fig)
-
-                    writer.grab_frame()
-
-                print('All done!')
-
-            matplotlib.use(backend)
 
 
 if __name__ == '__main__':
