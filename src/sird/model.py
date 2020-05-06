@@ -260,8 +260,8 @@ class Model:
 
             self.__ukf = UnscentedKalmanFilter(Model.__N_FILTERED, Model.__N_MEASURED, 1, self.__h, Model.__f, points)
 
-            self.__ukf.x = np.array(
-                [self.__moh_data_i(0), self.__moh_data_r(0), self.__moh_data_d(0), self.__beta, self.__gamma, self.__mu])
+            self.__ukf.x = np.array([self.__moh_data_i(0), self.__moh_data_r(0), self.__moh_data_d(0),
+                                     self.__beta, self.__gamma, self.__mu])
 
         # Reset our MoH data (if requested).
 
