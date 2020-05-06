@@ -373,7 +373,7 @@ class Model:
             data_s_range = Model.__NZ_POPULATION - min(self.__moh_data_s_values)
             data_block = 10 ** (math.floor(math.log10(data_s_range)) - 1)
             s_values_shift = data_block * math.ceil(data_s_range / data_block)
-            ax2.set_ylim(Model.__NZ_POPULATION - s_values_shift, Model.__NZ_POPULATION)
+            ax2.set_ylim(min(min(self.__s_values), Model.__NZ_POPULATION - s_values_shift), Model.__NZ_POPULATION)
 
         # Second subplot: I and R.
 
