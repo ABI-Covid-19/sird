@@ -21,12 +21,6 @@ class Model:
     __DEATHS_URL = 'https://bit.ly/2L0hzxQ'
     __N_FILTERED = 6  # Number of state variables to filter (I, R, D, β, γ and μ).
     __N_MEASURED = 3  # Number of measured variables (I, R and D).
-    __I_ERROR = 2  # The MoH has, on occasion, reported up to 2 people having been wrongly categorised as infected.
-    __R_ERROR = 0.001  # People either recover or they don't, so no errors possible (hence a small value).
-    __D_ERROR = 0.001  # People either die or they don't, so no errors possible (hence a small value).
-    __BETA_ERROR = 0.001  # We don't determine β ourselves, so no errors possible (hence a small value).
-    __GAMMA_ERROR = 0.001  # We don't determine γ ourselves, so no errors possible (hence a small value).
-    __MU_ERROR = 0.001  # We don't determine μ ourselves, so no errors possible (hence a small value).
     __NB_OF_STEPS = 100
     __DELTA_T = 1 / __NB_OF_STEPS
     __FIG_SIZE = (11, 13)
@@ -268,8 +262,6 @@ class Model:
 
             self.__ukf.x = np.array(
                 [self.__moh_data_i(0), self.__moh_data_r(0), self.__moh_data_d(0), self.__beta, self.__gamma, self.__mu])
-            self.__ukf.P = np.diag([Model.__I_ERROR ** 2, Model.__R_ERROR ** 2, Model.__D_ERROR ** 2,
-                                    Model.__BETA_ERROR ** 2, Model.__GAMMA_ERROR ** 2, Model.__MU_ERROR ** 2])
 
         # Reset our MoH data (if requested).
 
