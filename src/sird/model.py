@@ -203,7 +203,7 @@ class Model:
 
         self.__ukf = None
 
-        self.__x_p = None
+        self.__x = None
         self.__n = None
 
         self.__data_s_values = None
@@ -277,28 +277,28 @@ class Model:
         Return the S value based on the values of I, R, D and N.
         """
 
-        return self.__n - self.__x_p.sum()
+        return self.__n - self.__x.sum()
 
     def __i_value(self):
         """
         Return the I value.
         """
 
-        return self.__x_p[0]
+        return self.__x[0]
 
     def __r_value(self):
         """
         Return the R value.
         """
 
-        return self.__x_p[1]
+        return self.__x[1]
 
     def __d_value(self):
         """
         Return the D value.
         """
 
-        return self.__x_p[2]
+        return self.__x[2]
 
     def reset(self):
         """
@@ -328,10 +328,10 @@ class Model:
             self.__ukf.P = np.diag([Model.__I_ERROR ** 2, Model.__R_ERROR ** 2, Model.__D_ERROR ** 2,
                                     Model.__BETA_ERROR ** 2, Model.__GAMMA_ERROR ** 2, Model.__MU_ERROR ** 2])
 
-            self.__x_p = np.array([self.__data_i(0), self.__data_r(0), self.__data_d(0)])
+            self.__x = np.array([self.__data_i(0), self.__data_r(0), self.__data_d(0)])
             self.__n = Model.__NZ_POPULATION
         else:
-            self.__x_p = np.array([3, 0, 0])
+            self.__x = np.array([3, 0, 0])
             self.__n = 1000
 
         # Reset our MoH data and simulation values.
@@ -423,12 +423,12 @@ class Model:
                     self.__ukf.predict(model_self=self)
                     self.__ukf.update(np.array([self.__data_i(k), self.__data_r(k), self.__data_d(k)]))
 
-                    self.__x_p = self.__ukf.x[:3]
+                    self.__x = self.__ukf.x[:3]
                     self.__beta = self.__ukf.x[3]
                     self.__gamma = self.__ukf.x[4]
                     self.__mu = self.__ukf.x[5]
                 else:
-                    self.__x_p = Model.__f(self.__x_p, Model.__DELTA_T, model_self=self, with_ukf=False)
+                    self.__x = Model.__f(self.__x, Model.__DELTA_T, model_self=self, with_ukf=False)
 
             # Update our MoH data (if requested) and simulation values.
 
