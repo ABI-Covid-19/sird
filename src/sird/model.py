@@ -416,6 +416,10 @@ class Model:
             plt.show()
 
     def movie(self, filename):
+        """
+        Generate, if using the MoH data, a movie showing the evolution of our SIRD model throughout time.
+        """
+
         if self.__use_moh_data:
             data_size = Model.__MOH_DATA.shape[0]
             fig = plt.figure(figsize=Model.__FIG_SIZE)
@@ -486,7 +490,7 @@ if __name__ == '__main__':
 
     m = Model()
 
-    # Run the model and plot its S, I, R and D values, together with the MoH data.
+    # Run our SIRD model and plot its S, I, R and D values, together with the MoH data.
 
     m.run()
     m.plot()
