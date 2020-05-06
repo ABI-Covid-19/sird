@@ -17,6 +17,9 @@ class Model:
     """
 
     __NZ_POPULATION = 5000000
+    __CONFIRMED_URL = 'https://bit.ly/35yJO0d'
+    __RECOVERED_URL = 'https://bit.ly/2L6jLE9'
+    __DEATHS_URL = 'https://bit.ly/2L0hzxQ'
     __N_FILTERED = 6  # Number of state variables to filter (I, R, D, β, γ and μ).
     __N_MEASURED = 3  # Number of measured variables (I, R and D).
     __I_ERROR = 2  # The MoH has, on occasion, reported up to 2 people having been wrongly categorised as infected.
@@ -149,10 +152,30 @@ class Model:
         Initialise our Model object.
         """
 
+        def jhu_data(url):
+            data = pd.read_csv(url)
+            data = data[data['Country/Region'] == 'New Zealand']
+            data = data.drop(data.columns[list(range(41))], axis=1)
+
+            return data
+
         # Retrieve the MoH data (if requested).
 
         if use == Model.Use.MOH_DATA and Model.__MOH_DATA is None:
-            Model.__MOH_DATA = pd.read_csv('https://bit.ly/3d5eCIq', usecols=[7, 9, 11])
+            confirmed_data = jhu_data(Model.__CONFIRMED_URL)
+            recovered_data = jhu_data(Model.__RECOVERED_URL)
+            deaths_data = jhu_data(Model.__DEATHS_URL)
+
+            for i in range(confirmed_data.shape[1]):
+                c = confirmed_data.iloc[0][i]
+                r = recovered_data.iloc[0][i]
+                d = deaths_data.iloc[0][i]
+                data = [c - r - d, r, d]
+
+                if Model.__MOH_DATA is None:
+                    Model.__MOH_DATA = np.array(data)
+                else:
+                    Model.__MOH_DATA = np.vstack((Model.__MOH_DATA, data))
 
         if use == Model.Use.MOH_DATA:
             self.__data = Model.__MOH_DATA
@@ -214,9 +237,7 @@ class Model:
         """
 
         if type(day) is int:
-            return self.__data.iloc[day][index] if self.__use_moh_data \
-                else self.__data[day][index] if self.__use_test_data \
-                else math.nan
+            return self.__data[day][index] if self.__use_data else math.nan
         else:
             floor_day = math.floor(day)
             floor_day_data_x = self.__data_x(floor_day, index)
@@ -228,21 +249,21 @@ class Model:
         Return the MoH/test I value for the given day.
         """
 
-        return self.__data_x(day, 2 if self.__use_moh_data else 0)
+        return self.__data_x(day, 0)
 
     def __data_r(self, day):
         """
         Return the MoH/test R value for the given day.
         """
 
-        return self.__data_x(day, 0 if self.__use_moh_data else 1)
+        return self.__data_x(day, 1)
 
     def __data_d(self, day):
         """
         Return the MoH/test D value for the given day.
         """
 
-        return self.__data_x(day, 1 if self.__use_moh_data else 2)
+        return self.__data_x(day, 2)
 
     def __data_available(self, day):
         """
