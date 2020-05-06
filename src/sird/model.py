@@ -128,7 +128,10 @@ class Model:
         Return the MoH S value for the given day.
         """
 
-        return Model.__NZ_POPULATION - self.__moh_data_i(day) - self.__moh_data_r(day) - self.__moh_data_d(day)
+        if self.__use_moh_data:
+            return Model.__NZ_POPULATION - self.__moh_data_i(day) - self.__moh_data_r(day) - self.__moh_data_d(day)
+        else:
+            return math.nan
 
     def __moh_data_i(self, day):
         """
