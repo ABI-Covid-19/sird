@@ -31,21 +31,21 @@ class Model:
     __BETA_COLOR = '#77ac30'
     __GAMMA_COLOR = '#4dbeee'
     __MU_COLOR = '#a2142f'
-    __MOH_DATA_ALPHA = 0.3
-    __MOH_DATA = None
+    __DATA_ALPHA = 0.3
+    __DATA = None
 
     class Use(Enum):
         WIKIPEDIA = auto()
-        MOH_DATA = auto()
+        DATA = auto()
 
-    def __init__(self, use=Use.MOH_DATA, max_moh_data=-1):
+    def __init__(self, use=Use.DATA, max_data=-1):
         """
         Initialise our Model object.
         """
 
-        # Retrieve the MoH data (if requested and needed).
+        # Retrieve the data (if requested and needed).
 
-        if use == Model.Use.MOH_DATA and Model.__MOH_DATA is None:
+        if use == Model.Use.DATA and Model.__DATA is None:
             confirmed_data = self.__jhu_data(Model.__CONFIRMED_URL)
             recovered_data = self.__jhu_data(Model.__RECOVERED_URL)
             deaths_data = self.__jhu_data(Model.__DEATHS_URL)
@@ -56,22 +56,22 @@ class Model:
                 d = deaths_data.iloc[0][i]
                 data = [c - r - d, r, d]
 
-                if Model.__MOH_DATA is None:
-                    Model.__MOH_DATA = np.array(data)
+                if Model.__DATA is None:
+                    Model.__DATA = np.array(data)
                 else:
-                    Model.__MOH_DATA = np.vstack((Model.__MOH_DATA, data))
+                    Model.__DATA = np.vstack((Model.__DATA, data))
 
-        if use == Model.Use.MOH_DATA:
-            self.__moh_data = Model.__MOH_DATA
+        if use == Model.Use.DATA:
+            self.__data = Model.__DATA
         else:
-            self.__moh_data = None
+            self.__data = None
 
-        if self.__moh_data is not None and max_moh_data != -1:
-            self.__moh_data = self.__moh_data[:max_moh_data]
+        if self.__data is not None and max_data != -1:
+            self.__data = self.__data[:max_data]
 
-        # Keep track of whether to use the MoH data.
+        # Keep track of whether to use the data.
 
-        self.__use_moh_data = use == Model.Use.MOH_DATA
+        self.__use_data = use == Model.Use.DATA
 
         # Declare some internal variables (that will then be initialised through our call to reset()).
 
@@ -84,10 +84,10 @@ class Model:
         self.__x = None
         self.__n = None
 
-        self.__moh_data_s_values = None
-        self.__moh_data_i_values = None
-        self.__moh_data_r_values = None
-        self.__moh_data_d_values = None
+        self.__data_s_values = None
+        self.__data_i_values = None
+        self.__data_r_values = None
+        self.__data_d_values = None
 
         self.__s_values = None
         self.__i_values = None
@@ -110,50 +110,50 @@ class Model:
 
         return data
 
-    def __moh_data_x(self, day, index):
+    def __data_x(self, day, index):
         """
-        Return the MoH I/R/D value for the given day.
-        """
-
-        return self.__moh_data[day][index] if self.__use_moh_data else math.nan
-
-    def __moh_data_s(self, day):
-        """
-        Return the MoH S value for the given day.
+        Return the I/R/D value for the given day.
         """
 
-        if self.__use_moh_data:
-            return Model.__NZ_POPULATION - self.__moh_data_i(day) - self.__moh_data_r(day) - self.__moh_data_d(day)
+        return self.__data[day][index] if self.__use_data else math.nan
+
+    def __data_s(self, day):
+        """
+        Return the S value for the given day.
+        """
+
+        if self.__use_data:
+            return Model.__NZ_POPULATION - self.__data_i(day) - self.__data_r(day) - self.__data_d(day)
         else:
             return math.nan
 
-    def __moh_data_i(self, day):
+    def __data_i(self, day):
         """
-        Return the MoH I value for the given day.
-        """
-
-        return self.__moh_data_x(day, 0)
-
-    def __moh_data_r(self, day):
-        """
-        Return the MoH R value for the given day.
+        Return the I value for the given day.
         """
 
-        return self.__moh_data_x(day, 1)
+        return self.__data_x(day, 0)
 
-    def __moh_data_d(self, day):
+    def __data_r(self, day):
         """
-        Return the MoH D value for the given day.
+        Return the R value for the given day.
         """
 
-        return self.__moh_data_x(day, 2)
+        return self.__data_x(day, 1)
 
-    def __moh_data_available(self, day):
+    def __data_d(self, day):
+        """
+        Return the D value for the given day.
+        """
+
+        return self.__data_x(day, 2)
+
+    def __data_available(self, day):
         """
         Return whether some data is available for the given day.
         """
 
-        return day <= self.__moh_data.shape[0] - 1 if self.__use_moh_data else False
+        return day <= self.__data.shape[0] - 1 if self.__use_data else False
 
     def __s_value(self):
         """
@@ -239,10 +239,10 @@ class Model:
         self.__gamma = 0.035
         self.__mu = 0.005
 
-        # Reset I, R and D to the MoH data at day 0 or the values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
+        # Reset I, R and D to the data at day 0 or the values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
 
-        if self.__use_moh_data:
-            self.__x = np.array([self.__moh_data_i(0), self.__moh_data_r(0), self.__moh_data_d(0)])
+        if self.__use_data:
+            self.__x = np.array([self.__data_i(0), self.__data_r(0), self.__data_d(0)])
             self.__n = Model.__NZ_POPULATION
         else:
             self.__x = np.array([3, 0, 0])
@@ -251,7 +251,7 @@ class Model:
         # Reset our Unscented Kalman filter (if required). Note tat we use a dt value of 1 (day) and not the value of
         # Model.__DELTA_T.
 
-        if self.__use_moh_data:
+        if self.__use_data:
             points = MerweScaledSigmaPoints(Model.__N_FILTERED,
                                             1e-3,  # Alpha value (usually a small positive value like 1e-3).
                                             2,  # Beta value (a value of 2 is optimal for a Gaussian distribution).
@@ -260,16 +260,16 @@ class Model:
 
             self.__ukf = UnscentedKalmanFilter(Model.__N_FILTERED, Model.__N_MEASURED, 1, self.__h, Model.__f, points)
 
-            self.__ukf.x = np.array([self.__moh_data_i(0), self.__moh_data_r(0), self.__moh_data_d(0),
+            self.__ukf.x = np.array([self.__data_i(0), self.__data_r(0), self.__data_d(0),
                                      self.__beta, self.__gamma, self.__mu])
 
-        # Reset our MoH data (if requested).
+        # Reset our data (if requested).
 
-        if self.__use_moh_data:
-            self.__moh_data_s_values = np.array([self.__moh_data_s(0)])
-            self.__moh_data_i_values = np.array([self.__moh_data_i(0)])
-            self.__moh_data_r_values = np.array([self.__moh_data_r(0)])
-            self.__moh_data_d_values = np.array([self.__moh_data_d(0)])
+        if self.__use_data:
+            self.__data_s_values = np.array([self.__data_s(0)])
+            self.__data_i_values = np.array([self.__data_i(0)])
+            self.__data_r_values = np.array([self.__data_r(0)])
+            self.__data_d_values = np.array([self.__data_d(0)])
 
         # Reset our predicted/estimated values.
 
@@ -286,7 +286,7 @@ class Model:
 
     def run(self, nb_of_days=100):
         """
-        Run our SIRD model for the given number of days, taking advantage of the MoH data (if requested) to estimate the
+        Run our SIRD model for the given number of days, taking advantage of the data (if requested) to estimate the
         values of β, γ and μ.
         """
 
@@ -302,9 +302,9 @@ class Model:
         for i in range(1, nb_of_days + 1):
             # Compute our predicted/estimated state by computing our SIRD model / Unscented Kalman filter for one day.
 
-            if self.__use_moh_data and self.__moh_data_available(i):
+            if self.__use_data and self.__data_available(i):
                 self.__ukf.predict(model_self=self)
-                self.__ukf.update(np.array([self.__moh_data_i(i), self.__moh_data_r(i), self.__moh_data_d(i)]))
+                self.__ukf.update(np.array([self.__data_i(i), self.__data_r(i), self.__data_d(i)]))
 
                 self.__x = self.__ukf.x[:3]
                 self.__beta = self.__ukf.x[3]
@@ -314,19 +314,19 @@ class Model:
                 for j in range(1, Model.__NB_OF_STEPS + 1):
                     self.__x = Model.__f(self.__x, Model.__DELTA_T, model_self=self, with_ukf=False)
 
-            # Keep track of our MoH data (if requested).
+            # Keep track of our data (if requested).
 
-            if self.__use_moh_data:
-                if self.__moh_data_available(i):
-                    self.__moh_data_s_values = np.append(self.__moh_data_s_values, self.__moh_data_s(i))
-                    self.__moh_data_i_values = np.append(self.__moh_data_i_values, self.__moh_data_i(i))
-                    self.__moh_data_r_values = np.append(self.__moh_data_r_values, self.__moh_data_r(i))
-                    self.__moh_data_d_values = np.append(self.__moh_data_d_values, self.__moh_data_d(i))
+            if self.__use_data:
+                if self.__data_available(i):
+                    self.__data_s_values = np.append(self.__data_s_values, self.__data_s(i))
+                    self.__data_i_values = np.append(self.__data_i_values, self.__data_i(i))
+                    self.__data_r_values = np.append(self.__data_r_values, self.__data_r(i))
+                    self.__data_d_values = np.append(self.__data_d_values, self.__data_d(i))
                 else:
-                    self.__moh_data_s_values = np.append(self.__moh_data_s_values, math.nan)
-                    self.__moh_data_i_values = np.append(self.__moh_data_i_values, math.nan)
-                    self.__moh_data_r_values = np.append(self.__moh_data_r_values, math.nan)
-                    self.__moh_data_d_values = np.append(self.__moh_data_d_values, math.nan)
+                    self.__data_s_values = np.append(self.__data_s_values, math.nan)
+                    self.__data_i_values = np.append(self.__data_i_values, math.nan)
+                    self.__data_r_values = np.append(self.__data_r_values, math.nan)
+                    self.__data_d_values = np.append(self.__data_d_values, math.nan)
 
             # Keep track of our predicted/estimated values.
 
@@ -344,11 +344,11 @@ class Model:
     def plot(self, fig=None, two_axes=False):
         """
         Plot the results using five subplots for 1) S, 2) I and R, 3) D, 4) β, and 5) γ and μ. In each subplot, we plot
-        the MoH data (if requested) as bars and the computed value as a line.
+        the data (if requested) as bars and the computed value as a line.
         """
 
         days = range(self.__s_values.size)
-        nrows = 5 if self.__use_moh_data else 3
+        nrows = 5 if self.__use_data else 3
         ncols = 1
 
         if fig is None:
@@ -360,17 +360,17 @@ class Model:
             show_fig = False
             ax = fig.subplots(nrows, ncols)
 
-        fig.canvas.set_window_title('SIRD model fitted to MoH data' if self.__use_moh_data else 'Wikipedia SIRD model')
+        fig.canvas.set_window_title('SIRD model fitted to data' if self.__use_data else 'Wikipedia SIRD model')
 
         # First subplot: S.
 
         ax1 = ax[0]
         ax1.plot(days, self.__s_values, Model.__S_COLOR, label='S')
         ax1.legend(loc='best')
-        if self.__use_moh_data:
+        if self.__use_data:
             ax2 = ax1.twinx() if two_axes else ax1
-            ax2.bar(days, self.__moh_data_s_values, color=Model.__S_COLOR, alpha=Model.__MOH_DATA_ALPHA)
-            data_s_range = Model.__NZ_POPULATION - min(self.__moh_data_s_values)
+            ax2.bar(days, self.__data_s_values, color=Model.__S_COLOR, alpha=Model.__DATA_ALPHA)
+            data_s_range = Model.__NZ_POPULATION - min(self.__data_s_values)
             data_block = 10 ** (math.floor(math.log10(data_s_range)) - 1)
             s_values_shift = data_block * math.ceil(data_s_range / data_block)
             ax2.set_ylim(min(min(self.__s_values), Model.__NZ_POPULATION - s_values_shift), Model.__NZ_POPULATION)
@@ -381,30 +381,30 @@ class Model:
         ax1.plot(days, self.__i_values, Model.__I_COLOR, label='I')
         ax1.plot(days, self.__r_values, Model.__R_COLOR, label='R')
         ax1.legend(loc='best')
-        if self.__use_moh_data:
+        if self.__use_data:
             ax2 = ax1.twinx() if two_axes else ax1
-            ax2.bar(days, self.__moh_data_i_values, color=Model.__I_COLOR, alpha=Model.__MOH_DATA_ALPHA)
-            ax2.bar(days, self.__moh_data_r_values, color=Model.__R_COLOR, alpha=Model.__MOH_DATA_ALPHA)
+            ax2.bar(days, self.__data_i_values, color=Model.__I_COLOR, alpha=Model.__DATA_ALPHA)
+            ax2.bar(days, self.__data_r_values, color=Model.__R_COLOR, alpha=Model.__DATA_ALPHA)
 
         # Third subplot: D.
 
         ax1 = ax[2]
         ax1.plot(days, self.__d_values, Model.__D_COLOR, label='D')
         ax1.legend(loc='best')
-        if self.__use_moh_data:
+        if self.__use_data:
             ax2 = ax1.twinx() if two_axes else ax1
-            ax2.bar(days, self.__moh_data_d_values, color=Model.__D_COLOR, alpha=Model.__MOH_DATA_ALPHA)
+            ax2.bar(days, self.__data_d_values, color=Model.__D_COLOR, alpha=Model.__DATA_ALPHA)
 
         # Fourth subplot: β.
 
-        if self.__use_moh_data:
+        if self.__use_data:
             ax1 = ax[3]
             ax1.plot(days, self.__beta_values, Model.__BETA_COLOR, label='β')
             ax1.legend(loc='best')
 
         # Fourth subplot: γ and μ.
 
-        if self.__use_moh_data:
+        if self.__use_data:
             ax1 = ax[4]
             ax1.plot(days, self.__gamma_values, Model.__GAMMA_COLOR, label='γ')
             ax1.plot(days, self.__mu_values, Model.__MU_COLOR, label='μ')
@@ -417,11 +417,11 @@ class Model:
 
     def movie(self, filename):
         """
-        Generate, if using the MoH data, a movie showing the evolution of our SIRD model throughout time.
+        Generate, if using the data, a movie showing the evolution of our SIRD model throughout time.
         """
 
-        if self.__use_moh_data:
-            data_size = Model.__MOH_DATA.shape[0]
+        if self.__use_data:
+            data_size = Model.__DATA.shape[0]
             fig = plt.figure(figsize=Model.__FIG_SIZE)
             backend = matplotlib.get_backend()
             writer = manimation.writers['ffmpeg']()
@@ -432,7 +432,7 @@ class Model:
                 for i in range(1, data_size + 1):
                     print('Processing frame #', i, '/', data_size, '...', sep='')
 
-                    self.__moh_data = Model.__MOH_DATA[:i]
+                    self.__data = Model.__DATA[:i]
 
                     self.reset()
                     self.run()
@@ -486,11 +486,11 @@ class Model:
 
 
 if __name__ == '__main__':
-    # Create an instance of the SIRD model, asking for the MoH data to be used.
+    # Create an instance of the SIRD model, asking for the data to be used.
 
     m = Model()
 
-    # Run our SIRD model and plot its S, I, R and D values, together with the MoH data.
+    # Run our SIRD model and plot its S, I, R and D values, together with the data.
 
     m.run()
     m.plot()

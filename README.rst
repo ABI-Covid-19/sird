@@ -38,6 +38,7 @@ Use
  m.plot()
 
  # Generate a movie showing the evolution of the SIRD model throughout time.
+ # Note: this requires FFmpeg to be installed.
  m.movie('movie.mp4')
 
  # Output all the values for S, I, R and D.
