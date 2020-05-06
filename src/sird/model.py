@@ -314,25 +314,28 @@ class Model:
         # Reset I, R and D to the MoH data at day 0 or the values mentioned on Wikipedia (see https://bit.ly/2VMvb6h).
 
         if self.__use_data:
+            self.__x = np.array([self.__data_i(0), self.__data_r(0), self.__data_d(0)])
+            self.__n = Model.__NZ_POPULATION
+        else:
+            self.__x = np.array([3, 0, 0])
+            self.__n = 1000
+
+        # Reset our Unscented Kalman filter (if required). Note tat we use a dt value of 1 (day) and not the value of
+        # Model.__DELTA_T.
+
+        if self.__use_data:
             points = MerweScaledSigmaPoints(Model.__N_FILTERED,
                                             1e-3,  # Alpha value (usually a small positive value like 1e-3).
                                             2,  # Beta value (a value of 2 is optimal for a Gaussian distribution).
                                             0,  # Kappa value (usually, either 0 or 3-n).
                                             )
 
-            self.__ukf = UnscentedKalmanFilter(Model.__N_FILTERED, Model.__N_MEASURED, Model.__DELTA_T, self.__h,
-                                               Model.__f, points)
+            self.__ukf = UnscentedKalmanFilter(Model.__N_FILTERED, Model.__N_MEASURED, 1, self.__h, Model.__f, points)
 
             self.__ukf.x = np.array(
                 [self.__data_i(0), self.__data_r(0), self.__data_d(0), self.__beta, self.__gamma, self.__mu])
             self.__ukf.P = np.diag([Model.__I_ERROR ** 2, Model.__R_ERROR ** 2, Model.__D_ERROR ** 2,
                                     Model.__BETA_ERROR ** 2, Model.__GAMMA_ERROR ** 2, Model.__MU_ERROR ** 2])
-
-            self.__x = np.array([self.__data_i(0), self.__data_r(0), self.__data_d(0)])
-            self.__n = Model.__NZ_POPULATION
-        else:
-            self.__x = np.array([3, 0, 0])
-            self.__n = 1000
 
         # Reset our MoH data (if requested).
 
@@ -417,31 +420,29 @@ class Model:
 
         k = None
 
-        for i in range(nb_of_days):
-            # Compute our predicted state, i.e. compute the SIRD model for one day.
+        for i in range(1, nb_of_days + 1):
+            # Compute our predicted/estimated state by computing our SIRD model / Unscented Kalman filter for one day.
 
-            for j in range(1, Model.__NB_OF_STEPS + 1):
-                k = i + j * Model.__DELTA_T
+            if self.__use_data and self.__data_available(i):
+                self.__ukf.predict(model_self=self)
+                self.__ukf.update(np.array([self.__data_i(i), self.__data_r(i), self.__data_d(i)]))
 
-                if self.__use_data and self.__data_available(k):
-                    self.__ukf.predict(model_self=self)
-                    self.__ukf.update(np.array([self.__data_i(k), self.__data_r(k), self.__data_d(k)]))
-
-                    self.__x = self.__ukf.x[:3]
-                    self.__beta = self.__ukf.x[3]
-                    self.__gamma = self.__ukf.x[4]
-                    self.__mu = self.__ukf.x[5]
-                else:
+                self.__x = self.__ukf.x[:3]
+                self.__beta = self.__ukf.x[3]
+                self.__gamma = self.__ukf.x[4]
+                self.__mu = self.__ukf.x[5]
+            else:
+                for j in range(1, Model.__NB_OF_STEPS + 1):
                     self.__x = Model.__f(self.__x, Model.__DELTA_T, model_self=self, with_ukf=False)
 
             # Keep track of our MoH data (if requested).
 
             if self.__use_data:
-                if self.__data_available(k):
-                    self.__data_s_values = np.append(self.__data_s_values, self.__data_s(k))
-                    self.__data_i_values = np.append(self.__data_i_values, self.__data_i(k))
-                    self.__data_r_values = np.append(self.__data_r_values, self.__data_r(k))
-                    self.__data_d_values = np.append(self.__data_d_values, self.__data_d(k))
+                if self.__data_available(i):
+                    self.__data_s_values = np.append(self.__data_s_values, self.__data_s(i))
+                    self.__data_i_values = np.append(self.__data_i_values, self.__data_i(i))
+                    self.__data_r_values = np.append(self.__data_r_values, self.__data_r(i))
+                    self.__data_d_values = np.append(self.__data_d_values, self.__data_d(i))
                 else:
                     self.__data_s_values = np.append(self.__data_s_values, math.nan)
                     self.__data_i_values = np.append(self.__data_i_values, math.nan)
