@@ -58,4 +58,4 @@ For the first run, you should get something like:
 
 As for the movie, you should get something like:
 
-.. image:: res/figure.gif
+.. image:: res/movie.gif
