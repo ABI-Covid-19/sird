@@ -6,6 +6,8 @@ import matplotlib.animation as manimation
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup
 from filterpy.kalman import MerweScaledSigmaPoints
 from filterpy.kalman import UnscentedKalmanFilter
 
@@ -19,6 +21,7 @@ class Model:
     __CONFIRMED_URL = 'https://bit.ly/35yJO0d'
     __RECOVERED_URL = 'https://bit.ly/2L6jLE9'
     __DEATHS_URL = 'https://bit.ly/2L0hzxQ'
+    __POPULATION_URL = 'https://bit.ly/2WYjZCD'
     __N_FILTERED = 6  # Number of state variables to filter (I, R, D, β, γ and μ).
     __N_MEASURED = 3  # Number of measured variables (I, R and D).
     __NB_OF_STEPS = 100
@@ -33,6 +36,7 @@ class Model:
     __MU_COLOR = '#a2142f'
     __DATA_ALPHA = 0.3
     __DATA = None
+    __POPULATION = None
 
     class Use(Enum):
         WIKIPEDIA = auto()
@@ -68,6 +72,22 @@ class Model:
 
         if self.__data is not None and max_data != -1:
             self.__data = self.__data[:max_data]
+
+        # Retrieve the population (if needed).
+
+        if Model.__POPULATION is None:
+            Model.__POPULATION = {}
+
+            response = requests.get(Model.__POPULATION_URL)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            data = soup.select('div div div div div tbody tr')
+
+            for i in range(len(data)):
+                country_soup = BeautifulSoup(data[i].prettify(), 'html.parser')
+                country = country_soup.select('tr td a')[0].get_text().strip()
+                population = country_soup.select('tr td')[2].get_text().strip().replace(',', '')
+
+                Model.__POPULATION[country] = population
 
         # Keep track of whether to use the data.
 
