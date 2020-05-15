@@ -1,4 +1,5 @@
 import math
+import sys
 from enum import Enum, auto
 
 import matplotlib
@@ -17,7 +18,6 @@ class Model:
     SIRD model of Covid-19.
     """
 
-    __NZ_POPULATION = 5000000
     __CONFIRMED_URL = 'https://bit.ly/35yJO0d'
     __RECOVERED_URL = 'https://bit.ly/2L6jLE9'
     __DEATHS_URL = 'https://bit.ly/2L0hzxQ'
@@ -42,7 +42,7 @@ class Model:
         WIKIPEDIA = auto()
         DATA = auto()
 
-    def __init__(self, use=Use.DATA, max_data=-1):
+    def __init__(self, use=Use.DATA, max_data=-1, country='New Zealand'):
         """
         Initialise our Model object.
         """
@@ -84,10 +84,15 @@ class Model:
 
             for i in range(len(data)):
                 country_soup = BeautifulSoup(data[i].prettify(), 'html.parser')
-                country = country_soup.select('tr td a')[0].get_text().strip()
-                population = country_soup.select('tr td')[2].get_text().strip().replace(',', '')
+                country_value = country_soup.select('tr td a')[0].get_text().strip()
+                population_value = country_soup.select('tr td')[2].get_text().strip().replace(',', '')
 
-                Model.__POPULATION[country] = population
+                Model.__POPULATION[country_value] = int(population_value)
+
+        if country in Model.__POPULATION:
+            self.__population = Model.__POPULATION[country]
+        else:
+            sys.exit('Error: no population data is available for {}.'.format(country))
 
         # Keep track of whether to use the data.
 
@@ -143,7 +148,7 @@ class Model:
         """
 
         if self.__use_data:
-            return Model.__NZ_POPULATION - self.__data_i(day) - self.__data_r(day) - self.__data_d(day)
+            return self.__population - self.__data_i(day) - self.__data_r(day) - self.__data_d(day)
         else:
             return math.nan
 
@@ -263,7 +268,7 @@ class Model:
 
         if self.__use_data:
             self.__x = np.array([self.__data_i(0), self.__data_r(0), self.__data_d(0)])
-            self.__n = Model.__NZ_POPULATION
+            self.__n = self.__population
         else:
             self.__x = np.array([3, 0, 0])
             self.__n = 1000
@@ -390,10 +395,10 @@ class Model:
         if self.__use_data:
             ax2 = ax1.twinx() if two_axes else ax1
             ax2.bar(days, self.__data_s_values, color=Model.__S_COLOR, alpha=Model.__DATA_ALPHA)
-            data_s_range = Model.__NZ_POPULATION - min(self.__data_s_values)
+            data_s_range = self.__population - min(self.__data_s_values)
             data_block = 10 ** (math.floor(math.log10(data_s_range)) - 1)
             s_values_shift = data_block * math.ceil(data_s_range / data_block)
-            ax2.set_ylim(min(min(self.__s_values), Model.__NZ_POPULATION - s_values_shift), Model.__NZ_POPULATION)
+            ax2.set_ylim(min(min(self.__s_values), self.__population - s_values_shift), self.__population)
 
         # Second subplot: I and R.
 
