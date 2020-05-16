@@ -22,6 +22,7 @@ class Model:
     __RECOVERED_URL = 'https://bit.ly/2L6jLE9'
     __DEATHS_URL = 'https://bit.ly/2L0hzxQ'
     __POPULATION_URL = 'https://bit.ly/2WYjZCD'
+    __JHU_DATA_SHIFT = 4
     __N_FILTERED = 6  # Number of state variables to filter (I, R, D, β, γ and μ).
     __N_MEASURED = 3  # Number of measured variables (I, R and D).
     __NB_OF_STEPS = 100
@@ -50,11 +51,12 @@ class Model:
         # Retrieve the data (if requested and needed).
 
         if use == Model.Use.DATA and Model.__DATA is None:
-            confirmed_data = self.__jhu_data(Model.__CONFIRMED_URL)
-            recovered_data = self.__jhu_data(Model.__RECOVERED_URL)
-            deaths_data = self.__jhu_data(Model.__DEATHS_URL)
+            confirmed_data, confirmed_data_start = self.__jhu_data(Model.__CONFIRMED_URL, country)
+            recovered_data, recovered_data_start = self.__jhu_data(Model.__RECOVERED_URL, country)
+            deaths_data, deaths_data_start = self.__jhu_data(Model.__DEATHS_URL, country)
+            data_start = min(confirmed_data_start, recovered_data_start, deaths_data_start) - Model.__JHU_DATA_SHIFT
 
-            for i in range(confirmed_data.shape[1]):
+            for i in range(data_start, confirmed_data.shape[1]):
                 c = confirmed_data.iloc[0][i]
                 r = recovered_data.iloc[0][i]
                 d = deaths_data.iloc[0][i]
@@ -128,12 +130,22 @@ class Model:
         self.reset()
 
     @staticmethod
-    def __jhu_data(url):
+    def __jhu_data(url, country):
         data = pd.read_csv(url)
-        data = data[data['Country/Region'] == 'New Zealand']
-        data = data.drop(data.columns[list(range(41))], axis=1)
+        data = data[(data['Country/Region'] == country) & data['Province/State'].isnull()]
 
-        return data
+        if data.shape[0] == 0:
+            sys.exit('Error: no Covid-19 data is available for {}.'.format(country))
+
+        data = data.drop(data.columns[list(range(Model.__JHU_DATA_SHIFT))], axis=1)  # Skip non-data columns.
+
+        for i in range(data.shape[1]):
+            if data.iloc[0][i] != 0:
+                start = Model.__JHU_DATA_SHIFT + i
+
+                break
+
+        return data, start
 
     def __data_x(self, day, index):
         """
