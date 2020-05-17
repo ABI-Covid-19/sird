@@ -1,4 +1,5 @@
 import math
+import sys
 from enum import Enum, auto
 
 import matplotlib
@@ -6,6 +7,8 @@ import matplotlib.animation as manimation
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup
 from filterpy.kalman import MerweScaledSigmaPoints
 from filterpy.kalman import UnscentedKalmanFilter
 
@@ -15,10 +18,11 @@ class Model:
     SIRD model of Covid-19.
     """
 
-    __NZ_POPULATION = 5000000
     __CONFIRMED_URL = 'https://bit.ly/35yJO0d'
     __RECOVERED_URL = 'https://bit.ly/2L6jLE9'
     __DEATHS_URL = 'https://bit.ly/2L0hzxQ'
+    __POPULATION_URL = 'https://bit.ly/2WYjZCD'
+    __JHU_DATA_SHIFT = 4
     __N_FILTERED = 6  # Number of state variables to filter (I, R, D, β, γ and μ).
     __N_MEASURED = 3  # Number of measured variables (I, R and D).
     __NB_OF_STEPS = 100
@@ -33,12 +37,13 @@ class Model:
     __MU_COLOR = '#a2142f'
     __DATA_ALPHA = 0.3
     __DATA = None
+    __POPULATION = None
 
     class Use(Enum):
         WIKIPEDIA = auto()
         DATA = auto()
 
-    def __init__(self, use=Use.DATA, max_data=-1):
+    def __init__(self, use=Use.DATA, country='New Zealand', max_data=0):
         """
         Initialise our Model object.
         """
@@ -46,11 +51,12 @@ class Model:
         # Retrieve the data (if requested and needed).
 
         if use == Model.Use.DATA and Model.__DATA is None:
-            confirmed_data = self.__jhu_data(Model.__CONFIRMED_URL)
-            recovered_data = self.__jhu_data(Model.__RECOVERED_URL)
-            deaths_data = self.__jhu_data(Model.__DEATHS_URL)
+            confirmed_data, confirmed_data_start = self.__jhu_data(Model.__CONFIRMED_URL, country)
+            recovered_data, recovered_data_start = self.__jhu_data(Model.__RECOVERED_URL, country)
+            deaths_data, deaths_data_start = self.__jhu_data(Model.__DEATHS_URL, country)
+            data_start = min(confirmed_data_start, recovered_data_start, deaths_data_start) - Model.__JHU_DATA_SHIFT
 
-            for i in range(confirmed_data.shape[1]):
+            for i in range(data_start, confirmed_data.shape[1]):
                 c = confirmed_data.iloc[0][i]
                 r = recovered_data.iloc[0][i]
                 d = deaths_data.iloc[0][i]
@@ -66,8 +72,33 @@ class Model:
         else:
             self.__data = None
 
-        if self.__data is not None and max_data != -1:
-            self.__data = self.__data[:max_data]
+        if self.__data is not None:
+            if not isinstance(max_data, int):
+                sys.exit('Error: \'max_data\' must be an integer value.')
+
+            if max_data > 0:
+                self.__data = self.__data[:max_data]
+
+        # Retrieve the population (if needed).
+
+        if Model.__POPULATION is None:
+            Model.__POPULATION = {}
+
+            response = requests.get(Model.__POPULATION_URL)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            data = soup.select('div div div div div tbody tr')
+
+            for i in range(len(data)):
+                country_soup = BeautifulSoup(data[i].prettify(), 'html.parser')
+                country_value = country_soup.select('tr td a')[0].get_text().strip()
+                population_value = country_soup.select('tr td')[2].get_text().strip().replace(',', '')
+
+                Model.__POPULATION[country_value] = int(population_value)
+
+        if country in Model.__POPULATION:
+            self.__population = Model.__POPULATION[country]
+        else:
+            sys.exit('Error: no population data is available for {}.'.format(country))
 
         # Keep track of whether to use the data.
 
@@ -103,12 +134,22 @@ class Model:
         self.reset()
 
     @staticmethod
-    def __jhu_data(url):
+    def __jhu_data(url, country):
         data = pd.read_csv(url)
-        data = data[data['Country/Region'] == 'New Zealand']
-        data = data.drop(data.columns[list(range(41))], axis=1)
+        data = data[(data['Country/Region'] == country) & data['Province/State'].isnull()]
 
-        return data
+        if data.shape[0] == 0:
+            sys.exit('Error: no Covid-19 data is available for {}.'.format(country))
+
+        data = data.drop(data.columns[list(range(Model.__JHU_DATA_SHIFT))], axis=1)  # Skip non-data columns.
+
+        for i in range(data.shape[1]):
+            if data.iloc[0][i] != 0:
+                start = Model.__JHU_DATA_SHIFT + i
+
+                break
+
+        return data, start
 
     def __data_x(self, day, index):
         """
@@ -123,7 +164,7 @@ class Model:
         """
 
         if self.__use_data:
-            return Model.__NZ_POPULATION - self.__data_i(day) - self.__data_r(day) - self.__data_d(day)
+            return self.__population - self.__data_i(day) - self.__data_r(day) - self.__data_d(day)
         else:
             return math.nan
 
@@ -243,7 +284,7 @@ class Model:
 
         if self.__use_data:
             self.__x = np.array([self.__data_i(0), self.__data_r(0), self.__data_d(0)])
-            self.__n = Model.__NZ_POPULATION
+            self.__n = self.__population
         else:
             self.__x = np.array([3, 0, 0])
             self.__n = 1000
@@ -293,9 +334,7 @@ class Model:
         # Make sure that we were given a valid number of days.
 
         if not isinstance(nb_of_days, int) or nb_of_days <= 0:
-            print('The number of days (', nb_of_days, ') must be an integer value greater than 0.', sep='')
-
-            return
+            sys.exit('Error: \'nb_of_days\' must be an integer value greater than zero.')
 
         # Run our SIRD simulation.
 
@@ -341,7 +380,7 @@ class Model:
             self.__gamma_values = np.append(self.__gamma_values, self.__gamma)
             self.__mu_values = np.append(self.__mu_values, self.__mu)
 
-    def plot(self, fig=None, two_axes=False):
+    def plot(self, figure=None, two_axes=False):
         """
         Plot the results using five subplots for 1) S, 2) I and R, 3) D, 4) β, and 5) γ and μ. In each subplot, we plot
         the data (if requested) as bars and the computed value as a line.
@@ -351,68 +390,68 @@ class Model:
         nrows = 5 if self.__use_data else 3
         ncols = 1
 
-        if fig is None:
-            show_fig = True
-            fig, ax = plt.subplots(nrows, ncols, figsize=Model.__FIG_SIZE)
+        if figure is None:
+            show_figure = True
+            figure, axes = plt.subplots(nrows, ncols, figsize=Model.__FIG_SIZE)
         else:
-            fig.clf()
+            figure.clf()
 
-            show_fig = False
-            ax = fig.subplots(nrows, ncols)
+            show_figure = False
+            axes = figure.subplots(nrows, ncols)
 
-        fig.canvas.set_window_title('SIRD model fitted to data' if self.__use_data else 'Wikipedia SIRD model')
+        figure.canvas.set_window_title('SIRD model fitted to data' if self.__use_data else 'Wikipedia SIRD model')
 
         # First subplot: S.
 
-        ax1 = ax[0]
-        ax1.plot(days, self.__s_values, Model.__S_COLOR, label='S')
-        ax1.legend(loc='best')
+        axis1 = axes[0]
+        axis1.plot(days, self.__s_values, Model.__S_COLOR, label='S')
+        axis1.legend(loc='best')
         if self.__use_data:
-            ax2 = ax1.twinx() if two_axes else ax1
-            ax2.bar(days, self.__data_s_values, color=Model.__S_COLOR, alpha=Model.__DATA_ALPHA)
-            data_s_range = Model.__NZ_POPULATION - min(self.__data_s_values)
+            axis2 = axis1.twinx() if two_axes else axis1
+            axis2.bar(days, self.__data_s_values, color=Model.__S_COLOR, alpha=Model.__DATA_ALPHA)
+            data_s_range = self.__population - min(self.__data_s_values)
             data_block = 10 ** (math.floor(math.log10(data_s_range)) - 1)
             s_values_shift = data_block * math.ceil(data_s_range / data_block)
-            ax2.set_ylim(min(min(self.__s_values), Model.__NZ_POPULATION - s_values_shift), Model.__NZ_POPULATION)
+            axis2.set_ylim(min(min(self.__s_values), self.__population - s_values_shift), self.__population)
 
         # Second subplot: I and R.
 
-        ax1 = ax[1]
-        ax1.plot(days, self.__i_values, Model.__I_COLOR, label='I')
-        ax1.plot(days, self.__r_values, Model.__R_COLOR, label='R')
-        ax1.legend(loc='best')
+        axis1 = axes[1]
+        axis1.plot(days, self.__i_values, Model.__I_COLOR, label='I')
+        axis1.plot(days, self.__r_values, Model.__R_COLOR, label='R')
+        axis1.legend(loc='best')
         if self.__use_data:
-            ax2 = ax1.twinx() if two_axes else ax1
-            ax2.bar(days, self.__data_i_values, color=Model.__I_COLOR, alpha=Model.__DATA_ALPHA)
-            ax2.bar(days, self.__data_r_values, color=Model.__R_COLOR, alpha=Model.__DATA_ALPHA)
+            axis2 = axis1.twinx() if two_axes else axis1
+            axis2.bar(days, self.__data_i_values, color=Model.__I_COLOR, alpha=Model.__DATA_ALPHA)
+            axis2.bar(days, self.__data_r_values, color=Model.__R_COLOR, alpha=Model.__DATA_ALPHA)
 
         # Third subplot: D.
 
-        ax1 = ax[2]
-        ax1.plot(days, self.__d_values, Model.__D_COLOR, label='D')
-        ax1.legend(loc='best')
+        axis1 = axes[2]
+        axis1.plot(days, self.__d_values, Model.__D_COLOR, label='D')
+        axis1.legend(loc='best')
         if self.__use_data:
-            ax2 = ax1.twinx() if two_axes else ax1
-            ax2.bar(days, self.__data_d_values, color=Model.__D_COLOR, alpha=Model.__DATA_ALPHA)
+            axis2 = axis1.twinx() if two_axes else axis1
+            axis2.bar(days, self.__data_d_values, color=Model.__D_COLOR, alpha=Model.__DATA_ALPHA)
 
         # Fourth subplot: β.
 
         if self.__use_data:
-            ax1 = ax[3]
-            ax1.plot(days, self.__beta_values, Model.__BETA_COLOR, label='β')
-            ax1.legend(loc='best')
+            axis1 = axes[3]
+            axis1.plot(days, self.__beta_values, Model.__BETA_COLOR, label='β')
+            axis1.legend(loc='best')
 
         # Fourth subplot: γ and μ.
 
         if self.__use_data:
-            ax1 = ax[4]
-            ax1.plot(days, self.__gamma_values, Model.__GAMMA_COLOR, label='γ')
-            ax1.plot(days, self.__mu_values, Model.__MU_COLOR, label='μ')
-            ax1.legend(loc='best')
+            axis1 = axes[4]
+            axis1.plot(days, self.__gamma_values, Model.__GAMMA_COLOR, label='γ')
+            axis1.plot(days, self.__mu_values, Model.__MU_COLOR, label='μ')
+            axis1.legend(loc='best')
 
         plt.xlabel('time (day)')
 
-        if show_fig:
+        if show_figure:
             plt.show()
 
     def movie(self, filename):
@@ -422,13 +461,13 @@ class Model:
 
         if self.__use_data:
             data_size = Model.__DATA.shape[0]
-            fig = plt.figure(figsize=Model.__FIG_SIZE)
+            figure = plt.figure(figsize=Model.__FIG_SIZE)
             backend = matplotlib.get_backend()
             writer = manimation.writers['ffmpeg']()
 
             matplotlib.use("Agg")
 
-            with writer.saving(fig, filename, 96):
+            with writer.saving(figure, filename, 96):
                 for i in range(1, data_size + 1):
                     print('Processing frame #', i, '/', data_size, '...', sep='')
 
@@ -436,7 +475,7 @@ class Model:
 
                     self.reset()
                     self.run()
-                    self.plot(fig=fig)
+                    self.plot(figure=figure)
 
                     writer.grab_frame()
 

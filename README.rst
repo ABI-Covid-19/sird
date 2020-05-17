@@ -25,11 +25,26 @@ Use
  # Import the SIRD module.
  import sird
 
- # Create an instance of the SIRD model.
+ # Create a default instance of the SIRD model, i.e. use all of the Covid-19
+ # data for New Zealand. Optional parameters:
+ #  - use: Use.DATA (use the Covid-19 data from https://bit.ly/2X9zdos) or
+ #         Use.WIKIPEDIA (model parameter values from Wikipedia; see
+ #         https://bit.ly/2VMvb6h), default: Use.DATA;
+ #  - country: the country for which we want to use the Covid-19 data, default:
+ #             'New Zealand'; and
+ #  - max_data: the number n of data to use with n <= 0 meaning that all the
+ #              Covid-19 data is used, default: 0.
  m = sird.Model()
 
- # Run the model for 100 days (default) and plot its results.
+ # Run the model for the default amount of days, i.e. 100 days. Optional
+ # parameter:
+ #  - nb_of_days: number of days n worth of simulation with n > 0, default: 100.
  m.run()
+
+ # Plot the results. Optional parameters:
+ #  - figure: an existing figure to which we want the plot to be added, default:
+ #            None; and
+ #  - two_axes: use a second axis for the data, default: False.
  m.plot()
 
  # Reset the model, re-run it for 150 days and plot its results.
