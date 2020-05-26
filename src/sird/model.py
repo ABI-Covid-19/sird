@@ -142,6 +142,7 @@ class Model:
             sys.exit('Error: no Covid-19 data is available for {}.'.format(country))
 
         data = data.drop(data.columns[list(range(Model.__JHU_DATA_SHIFT))], axis=1)  # Skip non-data columns.
+        start = None
 
         for i in range(data.shape[1]):
             if data.iloc[0][i] != 0:
