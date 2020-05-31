@@ -55,6 +55,10 @@ Use
  m.plot()
 
  # Generate a movie showing the evolution of the SIRD model throughout time.
+ # Optional parameters:
+ #  - batch_filter: whether filtering should be done in batch mode, default:
+ #                  True.
+ #  - nb_of_days: number of days n worth of simulation with n > 0, default: 100.
  # Note: this requires FFmpeg to be installed.
  m.movie('movie.mp4')
 

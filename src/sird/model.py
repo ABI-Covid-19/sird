@@ -479,7 +479,7 @@ class Model:
         if show_figure:
             plt.show()
 
-    def movie(self, filename):
+    def movie(self, filename, batch_filter=True, nb_of_days=100):
         """
         Generate, if using the data, a movie showing the evolution of our SIRD model throughout time.
         """
@@ -499,7 +499,7 @@ class Model:
                     self.__data = Model.__DATA[:i]
 
                     self.reset()
-                    self.run()
+                    self.run(batch_filter=batch_filter, nb_of_days=nb_of_days)
                     self.plot(figure=figure)
 
                     writer.grab_frame()
