@@ -38,6 +38,8 @@ Use
 
  # Run the model for the default amount of days, i.e. 100 days. Optional
  # parameter:
+ #  - batch_filter: whether filtering should be done in batch mode, default:
+ #                  True.
  #  - nb_of_days: number of days n worth of simulation with n > 0, default: 100.
  m.run()
 
