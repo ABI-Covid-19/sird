@@ -81,7 +81,7 @@ class Model:
 
         # Retrieve the population (if needed).
 
-        if Model.__POPULATION is None:
+        if use == Model.Use.DATA and Model.__POPULATION is None:
             Model.__POPULATION = {}
 
             response = requests.get(Model.__POPULATION_URL)
@@ -95,10 +95,11 @@ class Model:
 
                 Model.__POPULATION[country_value] = int(population_value)
 
-        if country in Model.__POPULATION:
-            self.__population = Model.__POPULATION[country]
-        else:
-            sys.exit('Error: no population data is available for {}.'.format(country))
+        if use == Model.Use.DATA:
+            if country in Model.__POPULATION:
+                self.__population = Model.__POPULATION[country]
+            else:
+                sys.exit('Error: no population data is available for {}.'.format(country))
 
         # Keep track of whether to use the data.
 
