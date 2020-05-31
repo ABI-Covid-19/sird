@@ -27,8 +27,8 @@ Use
 
  # Create a default instance of the SIRD model, i.e. use all of the Covid-19
  # data for New Zealand. Optional parameters:
- #  - use: Use.DATA (use the Covid-19 data from https://bit.ly/2X9zdos) or
- #         Use.WIKIPEDIA (model parameter values from Wikipedia; see
+ #  - use: Model.Use.DATA (use the Covid-19 data from https://bit.ly/2X9zdos) or
+ #         Model.Use.WIKIPEDIA (model parameter values from Wikipedia; see
  #         https://bit.ly/2VMvb6h), default: Use.DATA;
  #  - country: the country for which we want to use the Covid-19 data, default:
  #             'New Zealand'; and
@@ -37,7 +37,9 @@ Use
  m = sird.Model()
 
  # Run the model for the default amount of days, i.e. 100 days. Optional
- # parameter:
+ # parameters:
+ #  - batch_filter: whether filtering should be done in batch mode, default:
+ #                  True.
  #  - nb_of_days: number of days n worth of simulation with n > 0, default: 100.
  m.run()
 
@@ -53,6 +55,10 @@ Use
  m.plot()
 
  # Generate a movie showing the evolution of the SIRD model throughout time.
+ # Optional parameters:
+ #  - batch_filter: whether filtering should be done in batch mode, default:
+ #                  True.
+ #  - nb_of_days: number of days n worth of simulation with n > 0, default: 100.
  # Note: this requires FFmpeg to be installed.
  m.movie('movie.mp4')
 
