@@ -340,51 +340,47 @@ class Model:
 
         # Run our SIRD simulation.
 
-        if batch_filter:
-            print('To be done...')
-        else:
-            for i in range(1, nb_of_days + 1):
-                # Compute our predicted/estimated state by computing our SIRD model / Unscented Kalman filter for one
-                # day.
+        for i in range(1, nb_of_days + 1):
+            # Compute our predicted/estimated state by computing our SIRD model / Unscented Kalman filter for one day.
 
-                if self.__use_data and self.__data_available(i):
-                    self.__ukf.predict(model_self=self)
-                    self.__ukf.update(np.array([self.__data_i(i), self.__data_r(i), self.__data_d(i)]))
+            if self.__use_data and self.__data_available(i):
+                self.__ukf.predict(model_self=self)
+                self.__ukf.update(np.array([self.__data_i(i), self.__data_r(i), self.__data_d(i)]))
 
-                    self.__x = self.__ukf.x[:3]
-                    self.__beta = self.__ukf.x[3]
-                    self.__gamma = self.__ukf.x[4]
-                    self.__mu = self.__ukf.x[5]
+                self.__x = self.__ukf.x[:3]
+                self.__beta = self.__ukf.x[3]
+                self.__gamma = self.__ukf.x[4]
+                self.__mu = self.__ukf.x[5]
+            else:
+                for j in range(1, Model.__NB_OF_STEPS + 1):
+                    self.__x = Model.__f(self.__x, Model.__DELTA_T, model_self=self, with_ukf=False)
+
+            # Keep track of our data (if requested).
+
+            if self.__use_data:
+                if self.__data_available(i):
+                    self.__data_s_values = np.append(self.__data_s_values, self.__data_s(i))
+                    self.__data_i_values = np.append(self.__data_i_values, self.__data_i(i))
+                    self.__data_r_values = np.append(self.__data_r_values, self.__data_r(i))
+                    self.__data_d_values = np.append(self.__data_d_values, self.__data_d(i))
                 else:
-                    for j in range(1, Model.__NB_OF_STEPS + 1):
-                        self.__x = Model.__f(self.__x, Model.__DELTA_T, model_self=self, with_ukf=False)
+                    self.__data_s_values = np.append(self.__data_s_values, math.nan)
+                    self.__data_i_values = np.append(self.__data_i_values, math.nan)
+                    self.__data_r_values = np.append(self.__data_r_values, math.nan)
+                    self.__data_d_values = np.append(self.__data_d_values, math.nan)
 
-                # Keep track of our data (if requested).
+            # Keep track of our predicted/estimated values.
 
-                if self.__use_data:
-                    if self.__data_available(i):
-                        self.__data_s_values = np.append(self.__data_s_values, self.__data_s(i))
-                        self.__data_i_values = np.append(self.__data_i_values, self.__data_i(i))
-                        self.__data_r_values = np.append(self.__data_r_values, self.__data_r(i))
-                        self.__data_d_values = np.append(self.__data_d_values, self.__data_d(i))
-                    else:
-                        self.__data_s_values = np.append(self.__data_s_values, math.nan)
-                        self.__data_i_values = np.append(self.__data_i_values, math.nan)
-                        self.__data_r_values = np.append(self.__data_r_values, math.nan)
-                        self.__data_d_values = np.append(self.__data_d_values, math.nan)
+            self.__s_values = np.append(self.__s_values, self.__s_value())
+            self.__i_values = np.append(self.__i_values, self.__i_value())
+            self.__r_values = np.append(self.__r_values, self.__r_value())
+            self.__d_values = np.append(self.__d_values, self.__d_value())
 
-                # Keep track of our predicted/estimated values.
+            # Keep track of our estimated SIRD model parameters.
 
-                self.__s_values = np.append(self.__s_values, self.__s_value())
-                self.__i_values = np.append(self.__i_values, self.__i_value())
-                self.__r_values = np.append(self.__r_values, self.__r_value())
-                self.__d_values = np.append(self.__d_values, self.__d_value())
-
-                # Keep track of our estimated SIRD model parameters.
-
-                self.__beta_values = np.append(self.__beta_values, self.__beta)
-                self.__gamma_values = np.append(self.__gamma_values, self.__gamma)
-                self.__mu_values = np.append(self.__mu_values, self.__mu)
+            self.__beta_values = np.append(self.__beta_values, self.__beta)
+            self.__gamma_values = np.append(self.__gamma_values, self.__gamma)
+            self.__mu_values = np.append(self.__mu_values, self.__mu)
 
     def plot(self, figure=None, two_axes=False):
         """
