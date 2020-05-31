@@ -241,7 +241,8 @@ class Model:
         with_ukf = kwargs.get('with_ukf', True)
 
         if with_ukf:
-            s = model_self.__n - x[:3].sum()
+            # s = model_self.__n - x[:3].sum()
+            s = 4822233 - x[:3].sum()
             beta = x[3]
             gamma = x[4]
             mu = x[5]
@@ -251,7 +252,8 @@ class Model:
             gamma = model_self.__gamma
             mu = model_self.__mu
 
-        a = np.array([[1 + dt * (beta * s / model_self.__n - gamma - mu), 0, 0, 0, 0, 0],
+        # a = np.array([[1 + dt * (beta * s / model_self.__n - gamma - mu), 0, 0, 0, 0, 0],
+        a = np.array([[1 + dt * (beta * s / 4822233 - gamma - mu), 0, 0, 0, 0, 0],
                       [dt * gamma, 1, 0, 0, 0, 0],
                       [dt * mu, 0, 1, 0, 0, 0],
                       [0, 0, 0, 1, 0, 0],
@@ -338,19 +340,39 @@ class Model:
         if not isinstance(nb_of_days, int) or nb_of_days <= 0:
             sys.exit('Error: \'nb_of_days\' must be an integer value greater than zero.')
 
-        # Run our SIRD simulation.
+        # Run our SIRD simulation, which involves computing our predicted/estimated state by computing our SIRD model /
+        # Unscented Kalman filter in batch filter mode, if required.
+
+        if self.__use_data and batch_filter:
+            mu, cov = self.__ukf.batch_filter(self.__data)
+            batch_filter_x, _, _ = self.__ukf.rts_smoother(mu, cov)
+
+            # Override the first value of S, I, R and D.
+
+            x = batch_filter_x[0][:3]
+
+            self.__s_values = np.array([self.__n - x.sum()])
+            self.__i_values = np.array([x[0]])
+            self.__r_values = np.array([x[1]])
+            self.__d_values = np.array([x[2]])
 
         for i in range(1, nb_of_days + 1):
             # Compute our predicted/estimated state by computing our SIRD model / Unscented Kalman filter for one day.
 
             if self.__use_data and self.__data_available(i):
-                self.__ukf.predict(model_self=self)
-                self.__ukf.update(np.array([self.__data_i(i), self.__data_r(i), self.__data_d(i)]))
+                if batch_filter:
+                    self.__x = batch_filter_x[i][:3]
+                    self.__beta = batch_filter_x[i][3]
+                    self.__gamma = batch_filter_x[i][4]
+                    self.__mu = batch_filter_x[i][5]
+                else:
+                    self.__ukf.predict(model_self=self)
+                    self.__ukf.update(np.array([self.__data_i(i), self.__data_r(i), self.__data_d(i)]))
 
-                self.__x = self.__ukf.x[:3]
-                self.__beta = self.__ukf.x[3]
-                self.__gamma = self.__ukf.x[4]
-                self.__mu = self.__ukf.x[5]
+                    self.__x = self.__ukf.x[:3]
+                    self.__beta = self.__ukf.x[3]
+                    self.__gamma = self.__ukf.x[4]
+                    self.__mu = self.__ukf.x[5]
             else:
                 for j in range(1, Model.__NB_OF_STEPS + 1):
                     self.__x = Model.__f(self.__x, Model.__DELTA_T, model_self=self, with_ukf=False)
