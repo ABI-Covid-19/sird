@@ -23,7 +23,7 @@ class Model:
     __DEATHS_URL = 'https://bit.ly/2L0hzxQ'
     __POPULATION_URL = 'https://bit.ly/2WYjZCD'
     __JHU_DATA_SHIFT = 4
-    __N_FILTERED = 6  # Number of state variables to filter (I, R, D, β, γ and μ).
+    __N_FILTERED = 7  # Number of state variables to filter (I, R, D, β, γ, μ and n, the population).
     __N_MEASURED = 3  # Number of measured variables (I, R and D).
     __NB_OF_STEPS = 100
     __DELTA_T = 1 / __NB_OF_STEPS
@@ -241,24 +241,25 @@ class Model:
         with_ukf = kwargs.get('with_ukf', True)
 
         if with_ukf:
-            # s = model_self.__n - x[:3].sum()
-            s = 4822233 - x[:3].sum()
+            s = x[6] - x[:3].sum()
             beta = x[3]
             gamma = x[4]
             mu = x[5]
+            n = x[6]
         else:
             s = model_self.__n - x.sum()
             beta = model_self.__beta
             gamma = model_self.__gamma
             mu = model_self.__mu
+            n = model_self.__n
 
-        # a = np.array([[1 + dt * (beta * s / model_self.__n - gamma - mu), 0, 0, 0, 0, 0],
-        a = np.array([[1 + dt * (beta * s / 4822233 - gamma - mu), 0, 0, 0, 0, 0],
-                      [dt * gamma, 1, 0, 0, 0, 0],
-                      [dt * mu, 0, 1, 0, 0, 0],
-                      [0, 0, 0, 1, 0, 0],
-                      [0, 0, 0, 0, 1, 0],
-                      [0, 0, 0, 0, 0, 1]])
+        a = np.array([[1 + dt * (beta * s / n - gamma - mu), 0, 0, 0, 0, 0, 0],
+                      [dt * gamma, 1, 0, 0, 0, 0, 0],
+                      [dt * mu, 0, 1, 0, 0, 0, 0],
+                      [0, 0, 0, 1, 0, 0, 0],
+                      [0, 0, 0, 0, 1, 0, 0],
+                      [0, 0, 0, 0, 0, 1, 0],
+                      [0, 0, 0, 0, 0, 0, 1]])
 
         if with_ukf:
             return a @ x
@@ -306,7 +307,7 @@ class Model:
             self.__ukf = UnscentedKalmanFilter(Model.__N_FILTERED, Model.__N_MEASURED, 1, self.__h, Model.__f, points)
 
             self.__ukf.x = np.array([self.__data_i(0), self.__data_r(0), self.__data_d(0),
-                                     self.__beta, self.__gamma, self.__mu])
+                                     self.__beta, self.__gamma, self.__mu, self.__n])
 
         # Reset our data (if requested).
 
